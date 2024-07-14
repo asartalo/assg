@@ -5,7 +5,10 @@
   env.GREET = "ASSG - Asartalo’s Static Site Generator";
 
   # https://devenv.sh/packages/
-  packages = with pkgs; [ nodejs_18 ];
+  packages = with pkgs; [
+    nodejs_18
+    html-tidy
+  ];
 
   # https://devenv.sh/scripts/
   scripts.hello.exec = "echo $GREET";
