@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/amit7itz/goset"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,12 +22,20 @@ func contains(slice []string, item string) bool {
 }
 
 func assertDirContents(t *testing.T, expectedDir string, actualDir string) {
+	filesInExpectedDir := goset.NewSet[string]()
+	filesInActualDir := goset.NewSet[string]()
+	directoriesInExpectedDir := goset.NewSet[string]()
+	directoriesInActualDir := goset.NewSet[string]()
+
 	err := filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if !d.IsDir() {
+		if d.IsDir() {
+			directoriesInExpectedDir.Add(path)
+		} else {
+			filesInExpectedDir.Add(path)
 			relPath, err := filepath.Rel(expectedDir, path) // Get path relative to expectedDir
 			if err != nil {
 				return err
@@ -69,5 +78,35 @@ func assertDirContents(t *testing.T, expectedDir string, actualDir string) {
 		return nil
 	})
 
-	assert.NoError(t, err, "Error during directory comparison")
+	assert.NoError(t, err, "Error walking through expected directory")
+
+	err = filepath.WalkDir(actualDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			directoriesInActualDir.Add(path)
+		} else {
+			filesInActualDir.Add(path)
+		}
+
+		return nil
+	})
+
+	assert.NoError(t, err, "Error tallying output directory")
+
+	if directoriesInActualDir.Len() > directoriesInExpectedDir.Len() {
+		t.Errorf(
+			"Extra directories in output directory: %v",
+			directoriesInActualDir.Difference(directoriesInExpectedDir),
+		)
+	}
+
+	if filesInActualDir.Len() > filesInExpectedDir.Len() {
+		t.Errorf(
+			"Extra files in output directory: %v",
+			filesInActualDir.Difference(filesInExpectedDir),
+		)
+	}
 }
