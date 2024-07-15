@@ -1,38 +1,13 @@
-package main
+package e2e
 
 import (
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
-	"github.com/asartalo/assg/internal/commands"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestBasicSite(t *testing.T) {
-	// Setup test environment
-	publicDir, err := os.MkdirTemp("", "basic-public")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(publicDir)
-
-	// current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Unable to get working directory")
-	}
-
-	siteDir := path.Join(cwd, "fixtures", "basic")
-	expectedDir := path.Join(siteDir, "public-expected")
-
-	err = commands.Build(siteDir, publicDir, false)
-	assert.NoError(t, err)
-
-	assertDirContents(t, expectedDir, publicDir)
-}
 
 var knownTextFileExtensions = []string{".html", ".css", ".js", ".txt"}
 

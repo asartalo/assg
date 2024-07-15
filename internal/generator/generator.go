@@ -30,6 +30,11 @@ func New(cfg *config.Config) *Generator {
 }
 
 func getRenderedPath(relPath string) string {
+	// if the file is named index.md, we want to render it as the root index.html (e.g. /index.html)
+	if relPath == "index.md" {
+		return ""
+	}
+
 	extension := filepath.Ext(relPath)
 	lastDotIndex := len(relPath) - len(extension)
 	return relPath[:lastDotIndex]
