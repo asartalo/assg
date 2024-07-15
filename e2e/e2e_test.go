@@ -15,6 +15,14 @@ type E2ETestSuite struct {
 	FixtureDirectory string
 }
 
+func (suite *E2ETestSuite) TestBasicSite() {
+	suite.RunBuildTest("basic")
+}
+
+func (suite *E2ETestSuite) TestSiteHomeOnly() {
+	suite.RunBuildTest("site-home-only")
+}
+
 func (suite *E2ETestSuite) SetupSuite() {
 	// current working directory
 	cwd, err := os.Getwd()
@@ -35,14 +43,6 @@ func (suite *E2ETestSuite) RunBuildTest(fixture string) {
 	suite.NoError(err)
 
 	assertDirContents(suite.T(), expectedDir, publicDir)
-}
-
-func (suite *E2ETestSuite) TestBasicSite() {
-	suite.RunBuildTest("basic")
-}
-
-func (suite *E2ETestSuite) TestSiteHomeOnly() {
-	suite.RunBuildTest("site-home-only")
 }
 
 func TestE2ETestSuite(t *testing.T) {
