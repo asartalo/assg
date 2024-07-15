@@ -38,7 +38,7 @@ func assertDirContents(t *testing.T, expectedDir string, actualDir string) {
 			assert.FileExists(
 				t,
 				actualFilePath,
-				"File ./%s missing from actualDir",
+				"Expected file ./%s missing in output directory",
 				relPath,
 			)
 

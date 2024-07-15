@@ -23,6 +23,11 @@ func (suite *E2ETestSuite) TestSiteHomeOnly() {
 	suite.RunBuildTest("site-home-only")
 }
 
+func (suite *E2ETestSuite) TestStaticFiles() {
+	// Static files are just copied over to the public directory
+	suite.RunBuildTest("static-files")
+}
+
 func (suite *E2ETestSuite) SetupSuite() {
 	// current working directory
 	cwd, err := os.Getwd()

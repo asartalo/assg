@@ -54,12 +54,12 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 		}
 
 		if !info.IsDir() {
-			if isMarkdown(info) {
-				relPath, err := filepath.Rel(contentDir, dPath)
-				if err != nil {
-					return err
-				}
+			relPath, err := filepath.Rel(contentDir, dPath)
+			if err != nil {
+				return err
+			}
 
+			if isMarkdown(info) {
 				fileContent, err := os.ReadFile(dPath)
 				if err != nil {
 					return err
@@ -76,6 +76,34 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 				}
 
 				err = TidyHtml(renderedHtml)
+				if err != nil {
+					return err
+				}
+			} else {
+				// everything else is just copied over
+				destinationPath := path.Join(outputDir, relPath)
+				// create the directories if they don't exist
+				err = os.MkdirAll(filepath.Dir(destinationPath), 0755)
+				if err != nil {
+					return err
+				}
+
+				// open sourcefile for reading
+				source, err := os.OpenFile(dPath, os.O_RDONLY, 0600)
+				if err != nil {
+					return err
+				}
+				defer source.Close()
+
+				// open destinationPath for writing
+				destination, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+				if err != nil {
+					return err
+				}
+				defer destination.Close()
+
+				// copy file
+				_, err = destination.ReadFrom(source)
 				if err != nil {
 					return err
 				}
