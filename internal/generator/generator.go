@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	htmltpl "html/template"
 	"io/fs"
 	"os"
@@ -53,7 +52,12 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 			return err
 		}
 
-		if !info.IsDir() {
+		if info.IsDir() {
+			// skip if basename has a dot prefix
+			if filepath.Base(dPath)[0] == '.' {
+				return filepath.SkipDir
+			}
+		} else {
 			relPath, err := filepath.Rel(contentDir, dPath)
 			if err != nil {
 				return err
@@ -82,28 +86,12 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 			} else {
 				// everything else is just copied over
 				destinationPath := path.Join(outputDir, relPath)
-				// create the directories if they don't exist
 				err = os.MkdirAll(filepath.Dir(destinationPath), 0755)
 				if err != nil {
 					return err
 				}
 
-				// open sourcefile for reading
-				source, err := os.OpenFile(dPath, os.O_RDONLY, 0600)
-				if err != nil {
-					return err
-				}
-				defer source.Close()
-
-				// open destinationPath for writing
-				destination, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-				if err != nil {
-					return err
-				}
-				defer destination.Close()
-
-				// copy file
-				_, err = destination.ReadFrom(source)
+				err = copyFile(dPath, destinationPath)
 				if err != nil {
 					return err
 				}
@@ -116,12 +104,35 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 	return err
 }
 
+func copyFile(from, to string) error {
+	// open sourcefile for reading
+	source, err := os.OpenFile(from, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	// open destinationPath for writing
+	destination, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	// copy file
+	_, err = destination.ReadFrom(source)
+
+	return err
+}
+
+const DEFAULT_TEMPLATE = "default.html"
+
 func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts bool) (destinationPath string, err error) {
 	if page.FrontMatter.Draft && !includeDrafts {
 		return "", nil
 	}
 
-	templateToUse := "default.html"
+	templateToUse := DEFAULT_TEMPLATE
 	if page.FrontMatter.Template != "" {
 		templateToUse = page.FrontMatter.Template
 	}
@@ -147,9 +158,7 @@ func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts boo
 
 	templateData := TemplateContent{
 		PageFrontMatter: page.FrontMatter,
-		Content: htmltpl.HTML(
-			fmt.Sprintf("<h1>%s</h1>", page.FrontMatter.Title) + string(page.Content.String()),
-		),
+		Content:         htmltpl.HTML(string(page.Content.String())),
 	}
 
 	err = g.Tmpl.RenderTemplate(
