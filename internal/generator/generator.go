@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	htmltpl "html/template"
 	"io/fs"
 	"os"
@@ -28,17 +29,6 @@ func New(cfg *config.Config) *Generator {
 	}
 }
 
-func getRenderedPath(relPath string) string {
-	// if the file is named index.md, we want to render it as the root index.html (e.g. /index.html)
-	if relPath == "index.md" {
-		return ""
-	}
-
-	extension := filepath.Ext(relPath)
-	lastDotIndex := len(relPath) - len(extension)
-	return relPath[:lastDotIndex]
-}
-
 func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 	err := g.Tmpl.LoadTemplates(path.Join(srcDir, "templates"))
 	if err != nil {
@@ -46,6 +36,7 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 	}
 
 	contentDir := path.Join(srcDir, "content")
+	hierarchy := NewPageHierarchy()
 
 	err = filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
 		if err != nil {
@@ -74,15 +65,7 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 					return err
 				}
 
-				renderedHtml, err := g.GeneratePage(page, outputDir, includeDrafts)
-				if err != nil {
-					return err
-				}
-
-				err = TidyHtml(renderedHtml)
-				if err != nil {
-					return err
-				}
+				hierarchy.AddPage(page)
 			} else {
 				// everything else is just copied over
 				destinationPath := path.Join(outputDir, relPath)
@@ -100,6 +83,22 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 
 		return nil
 	})
+
+	hierarchy.Retree()
+
+	for _, node := range hierarchy.Pages {
+		page := node.Page
+
+		renderedHtml, err := g.GeneratePage(page, outputDir, *hierarchy, includeDrafts)
+		if err != nil {
+			return err
+		}
+
+		err = TidyHtml(renderedHtml)
+		if err != nil {
+			return err
+		}
+	}
 
 	return err
 }
@@ -127,19 +126,25 @@ func copyFile(from, to string) error {
 
 const DEFAULT_TEMPLATE = "default.html"
 
-func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts bool) (destinationPath string, err error) {
+func (g *Generator) GeneratePage(page *Page, outputDir string, hierarchy PageHierarchy, includeDrafts bool) (destinationPath string, err error) {
 	if page.FrontMatter.Draft && !includeDrafts {
 		return "", nil
 	}
 
-	templateToUse := DEFAULT_TEMPLATE
-	if page.FrontMatter.Template != "" {
-		templateToUse = page.FrontMatter.Template
+	templateToUse := g.GetTemplateToUse(page, hierarchy)
+
+	// check if template is defined
+	if !g.Tmpl.TemplateExists(templateToUse) {
+		return "", fmt.Errorf(
+			"the template \"%s\" for the page \"%s\" does not exist",
+			templateToUse,
+			page.Path,
+		)
 	}
 
 	destinationPath = path.Join(
 		outputDir,
-		getRenderedPath(page.Path),
+		page.RenderedPath(),
 		"index.html",
 	)
 
@@ -168,6 +173,22 @@ func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts boo
 	)
 
 	return
+}
+
+func (g *Generator) GetTemplateToUse(page *Page, hierarchy PageHierarchy) string {
+	templateToUse := DEFAULT_TEMPLATE
+	parent := hierarchy.GetParent(*page)
+	// print hierarchy.Pages keys
+	for k := range hierarchy.Pages {
+		fmt.Println(k)
+	}
+	if page.FrontMatter.Template != "" {
+		templateToUse = page.FrontMatter.Template
+	} else if parent != nil && parent.FrontMatter.Index.PageTemplate != "" {
+		templateToUse = parent.FrontMatter.Index.PageTemplate
+	}
+
+	return templateToUse
 }
 
 func isMarkdown(info fs.DirEntry) bool {

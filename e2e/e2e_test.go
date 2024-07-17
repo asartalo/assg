@@ -28,6 +28,11 @@ func (suite *E2ETestSuite) TestStaticFiles() {
 	suite.RunBuildTest("static-files")
 }
 
+func (suite *E2ETestSuite) TestBlogExample() {
+	// Static files are just copied over to the public directory
+	suite.RunBuildTest("blog-posts")
+}
+
 func (suite *E2ETestSuite) SetupSuite() {
 	// current working directory
 	cwd, err := os.Getwd()

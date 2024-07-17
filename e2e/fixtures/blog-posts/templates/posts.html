@@ -1,0 +1,24 @@
+{{define "main"}}
+<div class="intro">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+</div>
+<div class="posts">
+  {{ range .Pages }}
+  <article>
+    <h2>{{ .Title }}</h2>
+    <div class="meta">
+      <time datetime="{{ .Date }}">{{ .Date | date "Jan 2, 2006" }}</time>
+    </div>
+    {{ .Content | first_paragraph }}
+  </article>
+  {{ end }}
+</div>
+<div class="pagination">
+  {{ if .Prev }}
+  <a href="{{ .Prev }}">Later Posts</a>
+  {{ end }} {{ if .Next }}
+  <a href="{{ .Next }}">Earlier Posts</a>
+  {{ end }}
+</div>
+{{end}}

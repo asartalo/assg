@@ -3,6 +3,7 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/yuin/goldmark/parser"
@@ -34,6 +35,11 @@ type Page struct {
 	Path        string
 }
 
+// IsIndex returns true if the page is an index page.
+func (p *Page) IsIndex() bool {
+	return p.FrontMatter.Index.SortBy != ""
+}
+
 // ParsePage parses a Markdown file with TOML frontmatter.
 func ParsePage(path string, content []byte) (*Page, error) {
 	var buf bytes.Buffer
@@ -51,4 +57,15 @@ func ParsePage(path string, content []byte) (*Page, error) {
 	}
 
 	return &Page{FrontMatter: fm, Content: buf, Path: path}, nil
+}
+
+func (p *Page) RenderedPath() string {
+	// if the file is named index.md, we want to render it as the root index.html (e.g. /index.html)
+	if p.Path == "index.md" {
+		return ""
+	}
+
+	extension := filepath.Ext(p.Path)
+	lastDotIndex := len(p.Path) - len(extension)
+	return p.Path[:lastDotIndex]
 }

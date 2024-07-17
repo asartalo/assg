@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/Masterminds/sprig/v3"
 )
 
 type Engine struct {
@@ -40,16 +42,16 @@ func (e *Engine) LoadTemplates(templateDir string) error {
 		return nil
 	})
 
+	e.Templates = e.Templates.Funcs(sprig.FuncMap())
+
 	return err
 }
 
 func (e *Engine) RenderTemplate(name string, result io.Writer, data interface{}) error {
 	return e.Templates.ExecuteTemplate(result, name, data)
-
 }
 
-// func templateFuncs() template.FuncMap {
-// 	return template.FuncMap{
-// 		// Define custom template functions
-// 	}
-// }
+func (e *Engine) TemplateExists(name string) bool {
+	template := e.Templates.Lookup(name)
+	return template != nil
+}
