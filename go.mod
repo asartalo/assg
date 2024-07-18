@@ -4,6 +4,7 @@ go 1.22.1
 
 require (
 	github.com/BurntSushi/toml v1.4.0
+	github.com/CloudyKit/jet/v6 v6.2.0
 	github.com/amit7itz/goset v1.2.1
 	github.com/mangoumbrella/goldmark-figure v1.2.0
 	github.com/spf13/cobra v1.8.1
@@ -14,6 +15,7 @@ require (
 )
 
 require (
+	github.com/CloudyKit/fastprinter v0.0.0-20200109182630-33d98a066a53 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/fishybell/snitch v1.7.1 // indirect

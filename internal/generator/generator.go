@@ -1,7 +1,6 @@
 package generator
 
 import (
-	htmltpl "html/template"
 	"io/fs"
 	"os"
 	"path"
@@ -18,7 +17,7 @@ type Generator struct {
 
 type TemplateContent struct {
 	PageFrontMatter
-	Content htmltpl.HTML
+	Content []byte
 }
 
 func New(cfg *config.Config) *Generator {
@@ -40,14 +39,11 @@ func getRenderedPath(relPath string) string {
 }
 
 func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
-	err := g.Tmpl.LoadTemplates(path.Join(srcDir, "templates"))
-	if err != nil {
-		return err
-	}
+	g.Tmpl.LoadTemplates(path.Join(srcDir, "templates"))
 
 	contentDir := path.Join(srcDir, "content")
 
-	err = filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -125,7 +121,7 @@ func copyFile(from, to string) error {
 	return err
 }
 
-const DEFAULT_TEMPLATE = "default.html"
+const DEFAULT_TEMPLATE = "default.jet"
 
 func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts bool) (destinationPath string, err error) {
 	if page.FrontMatter.Draft && !includeDrafts {
@@ -158,7 +154,7 @@ func (g *Generator) GeneratePage(page *Page, outputDir string, includeDrafts boo
 
 	templateData := TemplateContent{
 		PageFrontMatter: page.FrontMatter,
-		Content:         htmltpl.HTML(string(page.Content.String())),
+		Content:         page.Content.Bytes(),
 	}
 
 	err = g.Tmpl.RenderTemplate(

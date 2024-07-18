@@ -7,7 +7,7 @@
 <body>
   <main>
     <h1>{{ .Title }}</h1>
-    {{ .Content }}
+    {{ .Content | raw}}
   </main>
 </body>
 </html>
