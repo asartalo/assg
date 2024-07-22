@@ -35,9 +35,17 @@ type Page struct {
 	Path        string
 }
 
+func (p *Page) DateUnixEpoch() int64 {
+	return p.FrontMatter.Date.UnixMilli()
+}
+
 // IsIndex returns true if the page is an index page.
 func (p *Page) IsIndex() bool {
 	return p.FrontMatter.Index.SortBy != ""
+}
+
+func (p *Page) RootPath() string {
+	return fmt.Sprintf("/%s/", filepath.ToSlash(p.RenderedPath()))
 }
 
 // ParsePage parses a Markdown file with TOML frontmatter.

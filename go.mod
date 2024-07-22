@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/amit7itz/goset v1.2.1
+	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/mangoumbrella/goldmark-figure v1.2.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0

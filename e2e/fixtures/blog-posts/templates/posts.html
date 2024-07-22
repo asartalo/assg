@@ -1,4 +1,4 @@
-{{define "main"}}
+{{ template "base.html" . }} {{define "main"}}
 <div class="intro">
   <h1>{{ .Title }}</h1>
   {{ .Content }}
@@ -8,9 +8,11 @@
   <article>
     <h2>{{ .Title }}</h2>
     <div class="meta">
-      <time datetime="{{ .Date }}">{{ .Date | date "Jan 2, 2006" }}</time>
+      <time datetime="{{ .Date | timeAttr }}">
+        {{ dateInZone "Jan 2, 2006" .Date "UTC" }}
+      </time>
     </div>
-    {{ .Content | first_paragraph }}
+    {{ .Content | firstParagraph }}
   </article>
   {{ end }}
 </div>
