@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -8,8 +10,8 @@ import (
 var tidyArgs = []string{
 	"--show-body-only",
 	"auto",
-	"--show-errors",
-	"0",
+	// "--show-errors",
+	// "0",
 	"--gnu-emacs",
 	"yes",
 	"-q",
@@ -30,5 +32,13 @@ func TidyHtml(pathToTidy string) error {
 	cmd := exec.Command("tidy", args...)
 	cmd.Stdout = os.Stdout
 
-	return cmd.Run()
+	buf := bytes.NewBufferString("")
+	cmd.Stderr = buf
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running tidy on %s:\n%s", pathToTidy, buf.String())
+	}
+
+	return nil
 }

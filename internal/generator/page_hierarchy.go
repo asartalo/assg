@@ -2,29 +2,29 @@ package generator
 
 import "path/filepath"
 
-type PageNode struct {
-	Page   *Page
+type ContentNode struct {
+	Page   *WebPage
 	Parent string
 }
 
-type PageHierarchy struct {
-	Pages map[string]*PageNode
+type ContentHierarchy struct {
+	Pages map[string]*ContentNode
 }
 
-func NewPageHierarchy() *PageHierarchy {
-	return &PageHierarchy{
-		Pages: make(map[string]*PageNode),
+func NewPageHierarchy() *ContentHierarchy {
+	return &ContentHierarchy{
+		Pages: make(map[string]*ContentNode),
 	}
 }
 
 // TODO: REDO so that we can get parent without rewalking tree? Or maybe we should...
-func (ph *PageHierarchy) AddPage(page *Page) {
-	ph.Pages[page.RenderedPath()] = &PageNode{
+func (ph *ContentHierarchy) AddPage(page *WebPage) {
+	ph.Pages[page.RenderedPath()] = &ContentNode{
 		Page: page,
 	}
 }
 
-func (ph *PageHierarchy) Retree() {
+func (ph *ContentHierarchy) Retree() {
 	for path, node := range ph.Pages {
 		possibleParent := filepath.Dir(path)
 		parent := ""
@@ -37,9 +37,9 @@ func (ph *PageHierarchy) Retree() {
 	}
 }
 
-func (ph *PageHierarchy) GetChildren(page Page) []*Page {
+func (ph *ContentHierarchy) GetChildren(page WebPage) []*WebPage {
 	path := page.RenderedPath()
-	children := []*Page{}
+	children := []*WebPage{}
 	for _, node := range ph.Pages {
 		if node.Parent == path {
 			children = append(children, node.Page)
@@ -49,7 +49,7 @@ func (ph *PageHierarchy) GetChildren(page Page) []*Page {
 	return children
 }
 
-func (ph *PageHierarchy) GetParent(page Page) *Page {
+func (ph *ContentHierarchy) GetParent(page WebPage) *WebPage {
 	path := page.RenderedPath()
 	node, ok := ph.Pages[path]
 	if ok && node.Parent != "" {

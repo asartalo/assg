@@ -175,9 +175,15 @@ func (e *Engine) TemplateExists(name string) bool {
 }
 
 var redirectTemplate = `<!DOCTYPE html>
-<meta charset="utf-8" />
-<link rel="canonical" href="{{ . }}" />
-<meta http-equiv="refresh" content="0; url={{ . }}" />
-<title>Redirect</title>
-<p><a href="{{ . }}">Click here</a> to be redirected.</p>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="canonical" href="{{ . }}">
+	<meta http-equiv="refresh" content="0; url={{ . }}">
+	<title>Redirect</title>
+</head>
+<body>
+	<p><a href="{{ . }}">Click here</a> to be redirected.</p>
+</body>
+</html>
 `

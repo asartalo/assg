@@ -9,7 +9,7 @@ import (
 )
 
 type TemplateContent struct {
-	generator.PageFrontMatter
+	generator.FrontMatter
 	Content template.HTML
 }
 

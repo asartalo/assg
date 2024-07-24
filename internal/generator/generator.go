@@ -1,14 +1,11 @@
 package generator
 
 import (
-	"cmp"
 	"fmt"
-	htmltpl "html/template"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -19,18 +16,6 @@ import (
 type Generator struct {
 	Config *config.Config
 	Tmpl   *template.Engine
-}
-
-type TemplateContent struct {
-	PageFrontMatter
-	Content htmltpl.HTML
-}
-
-type IndexTemplateContent struct {
-	TemplateContent
-	Pages []TemplateContent
-	Prev  string
-	Next  string
 }
 
 func New(cfg *config.Config) *Generator {
@@ -46,10 +31,26 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 		return err
 	}
 
+	hierarchy, err := g.GatherContent(srcDir, outputDir, includeDrafts)
+	if err != nil {
+		return err
+	}
+
+	for _, node := range hierarchy.Pages {
+		err := g.GeneratePage(node.Page, outputDir, *hierarchy, includeDrafts)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func (g *Generator) GatherContent(srcDir, outputDir string, includeDrafts bool) (*ContentHierarchy, error) {
 	contentDir := path.Join(srcDir, "content")
 	hierarchy := NewPageHierarchy()
 
-	err = filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
+	err := filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -95,53 +96,27 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 		return nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	hierarchy.Retree()
 
-	for _, node := range hierarchy.Pages {
-		page := node.Page
-
-		_, err := g.GeneratePage(page, outputDir, *hierarchy, includeDrafts)
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
-}
-
-func copyFile(from, to string) error {
-	// open sourcefile for reading
-	source, err := os.OpenFile(from, os.O_RDONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	// open destinationPath for writing
-	destination, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	// copy file
-	_, err = destination.ReadFrom(source)
-
-	return err
+	return hierarchy, err
 }
 
 const DEFAULT_TEMPLATE = "default.html"
 
-func (g *Generator) GeneratePage(page *Page, outputDir string, hierarchy PageHierarchy, includeDrafts bool) (destinationPath string, err error) {
+func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy ContentHierarchy, includeDrafts bool) (err error) {
 	if page.FrontMatter.Draft && !includeDrafts {
-		return "", nil
+		return nil
 	}
 
 	templateToUse := g.GetTemplateToUse(page, hierarchy)
 
 	// check if template is defined
 	if !g.Tmpl.TemplateExists(templateToUse) {
-		return "", fmt.Errorf(
+		return fmt.Errorf(
 			"the template \"%s\" for the page \"%s\" does not exist",
 			templateToUse,
 			page.Path,
@@ -149,52 +124,29 @@ func (g *Generator) GeneratePage(page *Page, outputDir string, hierarchy PageHie
 	}
 
 	destinationDir := path.Join(outputDir, page.RenderedPath())
-	err = os.MkdirAll(destinationDir, 0755)
-	if err != nil {
-		return
-	}
-
-	templateData := pageToTemplateContent(page)
+	templateData := PageToTemplateContent(page)
 
 	if page.IsIndex() {
-		pagingGroups := pagesToTemplateContents(page, hierarchy)
+		pagingGroups := PagesToTemplateContents(page, hierarchy)
 		pagingCount := len(pagingGroups)
 
 		// render redirect page
 		if pagingCount > 1 {
 			page1Dir := path.Join(destinationDir, "page", "1")
-			destinationPath = path.Join(page1Dir, "index.html")
-
-			err = os.MkdirAll(page1Dir, 0755)
-			if err != nil {
-				return
-			}
 			redirectPath := g.FullUrl(page.RootPath())
 
-			destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+			err = generateBasicPage(g, redirectPath, page1Dir, "_redirect")
 			if err != nil {
-				return destinationPath, err
+				return err
 			}
-
-			defer destinationFile.Close()
-			err = g.Tmpl.RenderTemplate(
-				"_redirect",
-				destinationFile,
-				redirectPath,
-			)
 		}
 
 		for i, group := range pagingGroups {
+			var destinDir string
 			if i == 0 {
-				destinationPath = path.Join(destinationDir, "index.html")
+				destinDir = destinationDir
 			} else {
-				newDir := path.Join(destinationDir, "page", strconv.Itoa(i+1))
-				destinationPath = path.Join(newDir, "index.html")
-
-				err = os.MkdirAll(newDir, 0755)
-				if err != nil {
-					return
-				}
+				destinDir = path.Join(destinationDir, "page", strconv.Itoa(i+1))
 			}
 
 			prev := ""
@@ -221,75 +173,46 @@ func (g *Generator) GeneratePage(page *Page, outputDir string, hierarchy PageHie
 				Next:            next,
 			}
 
-			destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-			if err != nil {
-				return destinationPath, err
-			}
-			defer destinationFile.Close()
-
-			err = g.Tmpl.RenderTemplate(
-				templateToUse,
-				destinationFile,
-				indexTemplateData,
-			)
-
-			if err != nil {
-				return destinationPath, err
-			}
-
-			err = TidyHtml(destinationPath)
-			if err != nil {
-				return destinationPath, err
-			}
-
+			err = generateBasicPage(g, indexTemplateData, destinDir, templateToUse)
 		}
 	} else {
-		destinationPath = path.Join(destinationDir, "index.html")
-		// open destinationPath for writing
-		destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-		if err != nil {
-			return destinationPath, err
-		}
-		defer destinationFile.Close()
-		//
-		err = g.Tmpl.RenderTemplate(
-			templateToUse,
-			destinationFile,
-			templateData,
-		)
-
-		if err != nil {
-			return destinationPath, err
-		}
-
-		err = TidyHtml(destinationPath)
-		if err != nil {
-			return destinationPath, err
-		}
+		err = generateBasicPage(g, templateData, destinationDir, templateToUse)
 	}
 
 	return
 }
 
-func pageToTemplateContent(page *Page) TemplateContent {
-	return TemplateContent{
-		PageFrontMatter: page.FrontMatter,
-		Content:         htmltpl.HTML(string(page.Content.String())),
+type TemplateData interface {
+	string | TemplateContent | IndexTemplateContent
+}
+
+func generateBasicPage[T TemplateData](g *Generator, templateData T, destinationDir string, templateToUse string) error {
+	err := os.MkdirAll(destinationDir, 0755)
+	if err != nil {
+		return err
 	}
+
+	destinationPath := path.Join(destinationDir, "index.html")
+	destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		fmt.Printf("Error creating file")
+		return err
+	}
+	defer destinationFile.Close()
+
+	err = g.Tmpl.RenderTemplate(
+		templateToUse,
+		destinationFile,
+		templateData,
+	)
+	if err != nil {
+		return err
+	}
+
+	return TidyHtml(destinationPath)
 }
 
-func pagesToTemplateContents(indexPage *Page, hierarchy PageHierarchy) [][]TemplateContent {
-	childPages := hierarchy.GetChildren(*indexPage)
-	// sort by  date
-	slices.SortStableFunc(childPages, func(a, b *Page) int {
-		return cmp.Compare(b.DateUnixEpoch(), a.DateUnixEpoch())
-	})
-
-	paginateBy := indexPage.FrontMatter.Index.PaginateBy
-	return PaginateTransform(childPages, paginateBy, pageToTemplateContent)
-}
-
-func (g *Generator) GetTemplateToUse(page *Page, hierarchy PageHierarchy) string {
+func (g *Generator) GetTemplateToUse(page *WebPage, hierarchy ContentHierarchy) string {
 	templateToUse := DEFAULT_TEMPLATE
 	parent := hierarchy.GetParent(*page)
 
@@ -304,6 +227,27 @@ func (g *Generator) GetTemplateToUse(page *Page, hierarchy PageHierarchy) string
 
 func (g *Generator) FullUrl(path string) string {
 	return strings.TrimRight(g.Config.BaseURL, "/") + "/" + strings.TrimLeft(filepath.ToSlash(path), "/")
+}
+
+func copyFile(from, to string) error {
+	// open sourcefile for reading
+	source, err := os.OpenFile(from, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+
+	// open destinationPath for writing
+	destination, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	// copy file
+	_, err = destination.ReadFrom(source)
+
+	return err
 }
 
 func slashPath(path string) string {

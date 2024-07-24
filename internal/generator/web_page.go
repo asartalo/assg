@@ -17,8 +17,8 @@ type IndexFields struct {
 	PaginateBy   int    `toml:"paginate_by"`
 }
 
-// PageFrontMatter represents the TOML frontmatter of a Markdown file.
-type PageFrontMatter struct {
+// FrontMatter represents the TOML frontmatter of a Markdown file.
+type FrontMatter struct {
 	Title       string              `toml:"title"`
 	Description string              `toml:"description"`
 	Date        time.Time           `toml:"date"`
@@ -28,28 +28,28 @@ type PageFrontMatter struct {
 	Index       IndexFields         `toml:"index"`
 }
 
-// Page represents the parsed content of a Markdown file.
-type Page struct {
-	FrontMatter PageFrontMatter
+// WebPage represents the parsed content of a Markdown file.
+type WebPage struct {
+	FrontMatter FrontMatter
 	Content     bytes.Buffer
 	Path        string
 }
 
-func (p *Page) DateUnixEpoch() int64 {
+func (p *WebPage) DateUnixEpoch() int64 {
 	return p.FrontMatter.Date.UnixMilli()
 }
 
 // IsIndex returns true if the page is an index page.
-func (p *Page) IsIndex() bool {
+func (p *WebPage) IsIndex() bool {
 	return p.FrontMatter.Index.SortBy != ""
 }
 
-func (p *Page) RootPath() string {
+func (p *WebPage) RootPath() string {
 	return fmt.Sprintf("/%s/", filepath.ToSlash(p.RenderedPath()))
 }
 
 // ParsePage parses a Markdown file with TOML frontmatter.
-func ParsePage(path string, content []byte) (*Page, error) {
+func ParsePage(path string, content []byte) (*WebPage, error) {
 	var buf bytes.Buffer
 	context := parser.NewContext()
 	if err := MdParser.Convert(content, &buf, parser.WithContext(context)); err != nil {
@@ -57,17 +57,17 @@ func ParsePage(path string, content []byte) (*Page, error) {
 	}
 
 	// Extract frontmatter from the context
-	fm := PageFrontMatter{}
+	fm := FrontMatter{}
 	if fmi := frontmatter.Get(context); fmi != nil {
 		if err := fmi.Decode(&fm); err != nil {
 			return nil, fmt.Errorf("failed to decode front matter: %v", err)
 		}
 	}
 
-	return &Page{FrontMatter: fm, Content: buf, Path: path}, nil
+	return &WebPage{FrontMatter: fm, Content: buf, Path: path}, nil
 }
 
-func (p *Page) RenderedPath() string {
+func (p *WebPage) RenderedPath() string {
 	// if the file is named index.md, we want to render it as the root index.html (e.g. /index.html)
 	if p.Path == "index.md" {
 		return ""
