@@ -8,8 +8,9 @@ import (
 
 type TemplateContent struct {
 	FrontMatter
-	Content htmltpl.HTML
-	Config  config.Config
+	Content   htmltpl.HTML
+	Config    config.Config
+	Permalink string
 }
 
 type PaginatedTemplateContent struct {

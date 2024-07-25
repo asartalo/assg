@@ -23,6 +23,7 @@ type FrontMatter struct {
 	Description string              `toml:"description"`
 	Date        time.Time           `toml:"date"`
 	Draft       bool                `toml:"draft"`
+	Summary     string              `toml:"summary"`
 	Taxonomies  map[string][]string `toml:"taxonomies"`
 	Template    string              `toml:"template"`
 	Index       IndexFields         `toml:"index"`

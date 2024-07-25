@@ -311,6 +311,7 @@ func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
 		FrontMatter: page.FrontMatter,
 		Content:     htmltpl.HTML(string(page.Content.String())),
 		Config:      *g.Config,
+		Permalink:   g.FullUrl(page.RootPath()),
 	}
 }
 
