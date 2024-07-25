@@ -127,94 +127,121 @@ func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy Cont
 	templateData := PageToTemplateContent(page)
 
 	if page.IsIndex() {
-		pagingGroups := PagesToTemplateContents(page, hierarchy)
-		pagingCount := len(pagingGroups)
-
-		// render redirect page
-		if pagingCount > 1 {
-			page1Dir := path.Join(destinationDir, "page", "1")
-			redirectPath := g.FullUrl(page.RootPath())
-
-			err = generateBasicPage(g, redirectPath, page1Dir, "_redirect")
-			if err != nil {
-				return err
-			}
-		}
-
-		for i, group := range pagingGroups {
-			var destinDir string
-			if i == 0 {
-				destinDir = destinationDir
-			} else {
-				destinDir = path.Join(destinationDir, "page", strconv.Itoa(i+1))
-			}
-
-			prev := ""
-			if i > 0 {
-				if i == 1 {
-					prev = slashPath(page.RootPath())
-				} else {
-					prev = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i)))
-				}
-			}
-
-			next := ""
-			if pagingCount > 1 {
-				lastIndex := pagingCount - 1
-				if i < lastIndex {
-					next = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i+2)))
-				}
-			}
-
-			indexTemplateData := IndexTemplateContent{
-				TemplateContent: templateData,
-				Pages:           group,
-				Prev:            prev,
-				Next:            next,
-			}
-
-			err = generateBasicPage(g, indexTemplateData, destinDir, templateToUse)
-		}
+		err = g.generateIndexPages(
+			page,
+			templateData,
+			destinationDir,
+			templateToUse,
+			hierarchy,
+		)
 	} else {
 		parentPage := hierarchy.GetParent(*page)
 		if parentPage != nil {
-			prev := ""
-			prevPage := hierarchy.GetPrevPage(parentPage, page)
-			var prevPageData TemplateContent
-			if prevPage != nil {
-				prev = prevPage.RootPath()
-				prevPageData = PageToTemplateContent(prevPage)
-			}
-
-			next := ""
-			nextPage := hierarchy.GetNextPage(parentPage, page)
-			var nextPageData TemplateContent
-			if nextPage != nil {
-				next = nextPage.RootPath()
-				nextPageData = PageToTemplateContent(nextPage)
-			}
-
-			pageData := PaginatedTemplateContent{
-				TemplateContent: templateData,
-				Prev:            prev,
-				PrevPage:        prevPageData,
-				Next:            next,
-				NextPage:        nextPageData,
-			}
-			err = generateBasicPage(g, pageData, destinationDir, templateToUse)
+			err = g.renderPage(
+				g.generateChildPageData(page, parentPage, templateData, hierarchy),
+				destinationDir,
+				templateToUse,
+			)
 		} else {
-			err = generateBasicPage(g, templateData, destinationDir, templateToUse)
+			err = g.renderPage(templateData, destinationDir, templateToUse)
 		}
 	}
 
 	return
 }
 
-type TemplateData interface {
-	string | TemplateContent | PaginatedTemplateContent | IndexTemplateContent
+func (g *Generator) generateIndexPages(
+	page *WebPage,
+	templateData TemplateContent,
+	destinationDir string,
+	templateToUse string,
+	hierarchy ContentHierarchy,
+) (err error) {
+	pagingGroups := PagesToTemplateContents(page, hierarchy)
+	pagingCount := len(pagingGroups)
+
+	// render redirect page
+	if pagingCount > 1 {
+		page1Dir := path.Join(destinationDir, "page", "1")
+		redirectPath := g.FullUrl(page.RootPath())
+
+		err = g.renderPage(redirectPath, page1Dir, "_redirect")
+		if err != nil {
+			return err
+		}
+	}
+
+	for i, group := range pagingGroups {
+		var destinDir string
+		if i == 0 {
+			destinDir = destinationDir
+		} else {
+			destinDir = path.Join(destinationDir, "page", strconv.Itoa(i+1))
+		}
+
+		prev := ""
+		if i > 0 {
+			if i == 1 {
+				prev = slashPath(page.RootPath())
+			} else {
+				prev = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i)))
+			}
+		}
+
+		next := ""
+		if pagingCount > 1 {
+			lastIndex := pagingCount - 1
+			if i < lastIndex {
+				next = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i+2)))
+			}
+		}
+
+		indexTemplateData := IndexTemplateContent{
+			TemplateContent: templateData,
+			Pages:           group,
+			Prev:            prev,
+			Next:            next,
+		}
+
+		err = g.renderPage(indexTemplateData, destinDir, templateToUse)
+	}
+
+	return
 }
 
-func generateBasicPage[T TemplateData](g *Generator, templateData T, destinationDir string, templateToUse string) error {
+func (g *Generator) generateChildPageData(
+	page *WebPage,
+	parentPage *WebPage,
+	templateData TemplateContent,
+	hierarchy ContentHierarchy,
+) PaginatedTemplateContent {
+
+	prev := ""
+	prevPage := hierarchy.GetPrevPage(parentPage, page)
+	var prevPageData TemplateContent
+	if prevPage != nil {
+		prev = prevPage.RootPath()
+		prevPageData = PageToTemplateContent(prevPage)
+	}
+
+	next := ""
+	nextPage := hierarchy.GetNextPage(parentPage, page)
+	var nextPageData TemplateContent
+	if nextPage != nil {
+		next = nextPage.RootPath()
+		nextPageData = PageToTemplateContent(nextPage)
+	}
+
+	return PaginatedTemplateContent{
+		TemplateContent: templateData,
+		Prev:            prev,
+		PrevPage:        prevPageData,
+		Next:            next,
+		NextPage:        nextPageData,
+	}
+}
+
+func (g *Generator) renderPage(templateData interface{}, destinationDir string, templateToUse string) error {
 	err := os.MkdirAll(destinationDir, 0755)
 	if err != nil {
 		return err
