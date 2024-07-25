@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	htmltpl "html/template"
 	"io/fs"
 	"os"
 	"path"
@@ -124,7 +125,7 @@ func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy Cont
 	}
 
 	destinationDir := path.Join(outputDir, page.RenderedPath())
-	templateData := PageToTemplateContent(page)
+	templateData := g.PageToTemplateContent(page)
 
 	if page.IsIndex() {
 		err = g.generateIndexPages(
@@ -157,7 +158,7 @@ func (g *Generator) generateIndexPages(
 	templateToUse string,
 	hierarchy ContentHierarchy,
 ) (err error) {
-	pagingGroups := PagesToTemplateContents(page, hierarchy)
+	pagingGroups := g.PagesToTemplateContents(page, hierarchy)
 	pagingCount := len(pagingGroups)
 
 	// render redirect page
@@ -221,7 +222,7 @@ func (g *Generator) generateChildPageData(
 	var prevPageData TemplateContent
 	if prevPage != nil {
 		prev = prevPage.RootPath()
-		prevPageData = PageToTemplateContent(prevPage)
+		prevPageData = g.PageToTemplateContent(prevPage)
 	}
 
 	next := ""
@@ -229,7 +230,7 @@ func (g *Generator) generateChildPageData(
 	var nextPageData TemplateContent
 	if nextPage != nil {
 		next = nextPage.RootPath()
-		nextPageData = PageToTemplateContent(nextPage)
+		nextPageData = g.PageToTemplateContent(nextPage)
 	}
 
 	return PaginatedTemplateContent{
@@ -303,6 +304,21 @@ func copyFile(from, to string) error {
 	_, err = destination.ReadFrom(source)
 
 	return err
+}
+
+func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
+	return TemplateContent{
+		FrontMatter: page.FrontMatter,
+		Content:     htmltpl.HTML(string(page.Content.String())),
+		Config:      *g.Config,
+	}
+}
+
+func (g *Generator) PagesToTemplateContents(indexPage *WebPage, hierarchy ContentHierarchy) [][]TemplateContent {
+	childPages := hierarchy.GetChildren(*indexPage)
+
+	paginateBy := indexPage.FrontMatter.Index.PaginateBy
+	return PaginateTransform(childPages, paginateBy, g.PageToTemplateContent)
 }
 
 func slashPath(path string) string {

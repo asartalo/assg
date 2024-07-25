@@ -2,11 +2,14 @@ package generator
 
 import (
 	htmltpl "html/template"
+
+	"github.com/asartalo/assg/internal/config"
 )
 
 type TemplateContent struct {
 	FrontMatter
 	Content htmltpl.HTML
+	Config  config.Config
 }
 
 type PaginatedTemplateContent struct {
@@ -22,18 +25,4 @@ type IndexTemplateContent struct {
 	Pages []TemplateContent
 	Prev  string
 	Next  string
-}
-
-func PageToTemplateContent(page *WebPage) TemplateContent {
-	return TemplateContent{
-		FrontMatter: page.FrontMatter,
-		Content:     htmltpl.HTML(string(page.Content.String())),
-	}
-}
-
-func PagesToTemplateContents(indexPage *WebPage, hierarchy ContentHierarchy) [][]TemplateContent {
-	childPages := hierarchy.GetChildren(*indexPage)
-
-	paginateBy := indexPage.FrontMatter.Index.PaginateBy
-	return PaginateTransform(childPages, paginateBy, PageToTemplateContent)
 }
