@@ -1,3 +1,12 @@
 {{ template "base.html" . }} {{define "main"}}
 <h1>{{ .Title }}</h1>
-{{ .Content }} {{end}}
+{{ .Content }}
+
+<div class="pagination">
+  {{ if .Prev }}
+  <a href="{{ .Prev }}">{{ .PrevPage.Title }}</a>
+  {{ end }} {{ if .Next }}
+  <a href="{{ .Next }}">{{ .NextPage.Title }}</a>
+  {{ end }}
+</div>
+{{end}}

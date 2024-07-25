@@ -1,6 +1,10 @@
 package generator
 
-import "path/filepath"
+import (
+	"cmp"
+	"path/filepath"
+	"slices"
+)
 
 type ContentNode struct {
 	Page   *WebPage
@@ -8,7 +12,8 @@ type ContentNode struct {
 }
 
 type ContentHierarchy struct {
-	Pages map[string]*ContentNode
+	Pages         map[string]*ContentNode
+	childrenCache map[string][]*WebPage
 }
 
 func NewPageHierarchy() *ContentHierarchy {
@@ -39,12 +44,26 @@ func (ph *ContentHierarchy) Retree() {
 
 func (ph *ContentHierarchy) GetChildren(page WebPage) []*WebPage {
 	path := page.RenderedPath()
+	if ph.childrenCache == nil {
+		ph.childrenCache = make(map[string][]*WebPage)
+	}
+
+	if ph.childrenCache[path] != nil {
+		return ph.childrenCache[path]
+	}
+
 	children := []*WebPage{}
 	for _, node := range ph.Pages {
 		if node.Parent == path {
 			children = append(children, node.Page)
 		}
 	}
+	// sort by  date
+	slices.SortStableFunc(children, func(a, b *WebPage) int {
+		return cmp.Compare(b.DateUnixEpoch(), a.DateUnixEpoch())
+	})
+
+	ph.childrenCache[path] = children
 
 	return children
 }
@@ -54,6 +73,32 @@ func (ph *ContentHierarchy) GetParent(page WebPage) *WebPage {
 	node, ok := ph.Pages[path]
 	if ok && node.Parent != "" {
 		return ph.Pages[node.Parent].Page
+	}
+
+	return nil
+}
+
+func (ph *ContentHierarchy) GetNextPage(parent *WebPage, child *WebPage) *WebPage {
+	children := ph.GetChildren(*parent)
+	for i, page := range children {
+		if page.RenderedPath() == child.RenderedPath() {
+			if i+1 < len(children) {
+				return children[i+1]
+			}
+		}
+	}
+
+	return nil
+}
+
+func (ph *ContentHierarchy) GetPrevPage(parent *WebPage, child *WebPage) *WebPage {
+	children := ph.GetChildren(*parent)
+	for i, page := range children {
+		if page.RenderedPath() == child.RenderedPath() {
+			if i-1 >= 0 {
+				return children[i-1]
+			}
+		}
 	}
 
 	return nil

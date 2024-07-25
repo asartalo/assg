@@ -1,14 +1,20 @@
 package generator
 
 import (
-	"cmp"
 	htmltpl "html/template"
-	"slices"
 )
 
 type TemplateContent struct {
 	FrontMatter
 	Content htmltpl.HTML
+}
+
+type PaginatedTemplateContent struct {
+	TemplateContent
+	Prev     string
+	PrevPage TemplateContent
+	Next     string
+	NextPage TemplateContent
 }
 
 type IndexTemplateContent struct {
@@ -27,10 +33,6 @@ func PageToTemplateContent(page *WebPage) TemplateContent {
 
 func PagesToTemplateContents(indexPage *WebPage, hierarchy ContentHierarchy) [][]TemplateContent {
 	childPages := hierarchy.GetChildren(*indexPage)
-	// sort by  date
-	slices.SortStableFunc(childPages, func(a, b *WebPage) int {
-		return cmp.Compare(b.DateUnixEpoch(), a.DateUnixEpoch())
-	})
 
 	paginateBy := indexPage.FrontMatter.Index.PaginateBy
 	return PaginateTransform(childPages, paginateBy, PageToTemplateContent)

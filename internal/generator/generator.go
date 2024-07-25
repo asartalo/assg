@@ -176,14 +176,42 @@ func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy Cont
 			err = generateBasicPage(g, indexTemplateData, destinDir, templateToUse)
 		}
 	} else {
-		err = generateBasicPage(g, templateData, destinationDir, templateToUse)
+		parentPage := hierarchy.GetParent(*page)
+		if parentPage != nil {
+			prev := ""
+			prevPage := hierarchy.GetPrevPage(parentPage, page)
+			var prevPageData TemplateContent
+			if prevPage != nil {
+				prev = prevPage.RootPath()
+				prevPageData = PageToTemplateContent(prevPage)
+			}
+
+			next := ""
+			nextPage := hierarchy.GetNextPage(parentPage, page)
+			var nextPageData TemplateContent
+			if nextPage != nil {
+				next = nextPage.RootPath()
+				nextPageData = PageToTemplateContent(nextPage)
+			}
+
+			pageData := PaginatedTemplateContent{
+				TemplateContent: templateData,
+				Prev:            prev,
+				PrevPage:        prevPageData,
+				Next:            next,
+				NextPage:        nextPageData,
+			}
+			err = generateBasicPage(g, pageData, destinationDir, templateToUse)
+		} else {
+			err = generateBasicPage(g, templateData, destinationDir, templateToUse)
+		}
 	}
 
 	return
 }
 
 type TemplateData interface {
-	string | TemplateContent | IndexTemplateContent
+	string | TemplateContent | PaginatedTemplateContent | IndexTemplateContent
 }
 
 func generateBasicPage[T TemplateData](g *Generator, templateData T, destinationDir string, templateToUse string) error {

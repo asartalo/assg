@@ -45,7 +45,12 @@ func (p *WebPage) IsIndex() bool {
 }
 
 func (p *WebPage) RootPath() string {
-	return fmt.Sprintf("/%s/", filepath.ToSlash(p.RenderedPath()))
+	path := fmt.Sprintf("/%s/", filepath.ToSlash(p.RenderedPath()))
+	if path == "//" {
+		return "/"
+	}
+
+	return path
 }
 
 // ParsePage parses a Markdown file with TOML frontmatter.
