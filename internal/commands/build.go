@@ -19,7 +19,11 @@ func Build(srcDir, outputDir string, includeDrafts bool) error {
 		return err
 	}
 
+	if outputDir != "" {
+		config.OutputDirectory = outputDir
+	}
+	config.IncludeDrafts = includeDrafts
 	gen := generator.New(config)
 
-	return gen.Build(srcDir, outputDir, includeDrafts)
+	return gen.Build()
 }

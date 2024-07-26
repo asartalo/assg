@@ -20,25 +20,35 @@ type Generator struct {
 }
 
 func New(cfg *config.Config) *Generator {
-	return &Generator{
+	generator := &Generator{
 		Config: cfg,
-		Tmpl:   template.New(),
 	}
+
+	funcMap := make(htmltpl.FuncMap)
+	funcMap["foo"] = func() string {
+		return "bar"
+	}
+
+	generator.Tmpl = template.New(funcMap)
+
+	return generator
 }
 
-func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
+func (g *Generator) Build() error {
+	srcDir := g.Config.RootDirectory()
+
 	err := g.Tmpl.LoadTemplates(path.Join(srcDir, "templates"))
 	if err != nil {
 		return err
 	}
 
-	hierarchy, err := g.GatherContent(srcDir, outputDir, includeDrafts)
+	hierarchy, err := g.GatherContent()
 	if err != nil {
 		return err
 	}
 
 	for _, node := range hierarchy.Pages {
-		err := g.GeneratePage(node.Page, outputDir, *hierarchy, includeDrafts)
+		err := g.GeneratePage(node.Page, *hierarchy)
 		if err != nil {
 			return err
 		}
@@ -47,8 +57,9 @@ func (g *Generator) Build(srcDir, outputDir string, includeDrafts bool) error {
 	return err
 }
 
-func (g *Generator) GatherContent(srcDir, outputDir string, includeDrafts bool) (*ContentHierarchy, error) {
-	contentDir := path.Join(srcDir, "content")
+func (g *Generator) GatherContent() (*ContentHierarchy, error) {
+	outputDir := g.Config.OutputDirectoryAbsolute()
+	contentDir := g.Config.ContentDirectoryAbsolute()
 	hierarchy := NewPageHierarchy()
 
 	err := filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
@@ -108,8 +119,8 @@ func (g *Generator) GatherContent(srcDir, outputDir string, includeDrafts bool) 
 
 const DEFAULT_TEMPLATE = "default.html"
 
-func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy ContentHierarchy, includeDrafts bool) (err error) {
-	if page.FrontMatter.Draft && !includeDrafts {
+func (g *Generator) GeneratePage(page *WebPage, hierarchy ContentHierarchy) (err error) {
+	if page.FrontMatter.Draft && !g.Config.IncludeDrafts {
 		return nil
 	}
 
@@ -124,7 +135,7 @@ func (g *Generator) GeneratePage(page *WebPage, outputDir string, hierarchy Cont
 		)
 	}
 
-	destinationDir := path.Join(outputDir, page.RenderedPath())
+	destinationDir := path.Join(g.Config.OutputDirectoryAbsolute(), page.RenderedPath())
 	templateData := g.PageToTemplateContent(page)
 
 	if page.IsIndex() {

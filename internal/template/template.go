@@ -16,13 +16,14 @@ import (
 
 type Engine struct {
 	Templates map[string]*template.Template
+	funcMap   template.FuncMap
 }
 
-func New() *Engine {
-	return &Engine{}
+func New(funcMap template.FuncMap) *Engine {
+	return &Engine{funcMap: funcs(funcMap)}
 }
 
-func funcs() template.FuncMap {
+func funcs(otherFuncMap template.FuncMap) template.FuncMap {
 	initMap := sprig.HtmlFuncMap()
 	initMap["firstParagraph"] = func(htmlContent template.HTML) template.HTML {
 		// Regular expression to find the first paragraph
@@ -55,6 +56,10 @@ func funcs() template.FuncMap {
 
 	initMap["timeAttr"] = func(time time.Time) string {
 		return time.Format("2006-01-02T15:04:05Z07:00")
+	}
+
+	for k, v := range otherFuncMap {
+		initMap[k] = v
 	}
 
 	return initMap
@@ -128,7 +133,7 @@ func (e *Engine) LoadTemplates(templateDir string) error {
 
 	for name, info := range fileInfos {
 		tmpTemplate := template.New(name)
-		tmpTemplate = tmpTemplate.Funcs(funcs())
+		tmpTemplate = tmpTemplate.Funcs(e.funcMap)
 		_, err = tmpTemplate.Parse(info.Contents)
 		if err != nil {
 			return err
