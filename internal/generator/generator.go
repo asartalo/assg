@@ -15,51 +15,66 @@ import (
 )
 
 type Generator struct {
-	Config *config.Config
-	Tmpl   *template.Engine
+	Config    *config.Config
+	Tmpl      *template.Engine
+	hierarchy *ContentHierarchy
 }
 
-func New(cfg *config.Config) *Generator {
+func New(cfg *config.Config) (*Generator, error) {
 	generator := &Generator{
 		Config: cfg,
 	}
 
-	funcMap := make(htmltpl.FuncMap)
-	funcMap["foo"] = func() string {
-		return "bar"
+	hierarchy, err := GatherContent(*cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	generator.Tmpl = template.New(funcMap)
+	generator.hierarchy = hierarchy
 
-	return generator
+	funcMap := make(htmltpl.FuncMap)
+	funcMap["sectionPages"] = func(indexPath string, max, offset int) []TemplateContent {
+		return generator.GetSectionPages(indexPath, max, offset)
+	}
+
+	funcMap["sectionIndex"] = func(indexPath string) IndexTemplateContent {
+		page := generator.hierarchy.GetPage(indexPath)
+		if page == nil {
+			fmt.Printf("Unable to find page \"%s\"\n", indexPath)
+		}
+		templateContent := generator.PageToTemplateContent(page)
+
+		return IndexTemplateContent{
+			TemplateContent: templateContent,
+		}
+	}
+
+	srcDir := cfg.RootDirectory()
+	templates := template.New(funcMap)
+	err = templates.LoadTemplates(path.Join(srcDir, "templates"))
+	if err != nil {
+		return nil, err
+	}
+
+	generator.Tmpl = templates
+
+	return generator, err
 }
 
 func (g *Generator) Build() error {
-	srcDir := g.Config.RootDirectory()
-
-	err := g.Tmpl.LoadTemplates(path.Join(srcDir, "templates"))
-	if err != nil {
-		return err
-	}
-
-	hierarchy, err := g.GatherContent()
-	if err != nil {
-		return err
-	}
-
-	for _, node := range hierarchy.Pages {
-		err := g.GeneratePage(node.Page, *hierarchy)
+	for _, node := range g.hierarchy.Pages {
+		err := g.GeneratePage(node.Page)
 		if err != nil {
 			return err
 		}
 	}
 
-	return err
+	return nil
 }
 
-func (g *Generator) GatherContent() (*ContentHierarchy, error) {
-	outputDir := g.Config.OutputDirectoryAbsolute()
-	contentDir := g.Config.ContentDirectoryAbsolute()
+func GatherContent(config config.Config) (*ContentHierarchy, error) {
+	outputDir := config.OutputDirectoryAbsolute()
+	contentDir := config.ContentDirectoryAbsolute()
 	hierarchy := NewPageHierarchy()
 
 	err := filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
@@ -119,12 +134,16 @@ func (g *Generator) GatherContent() (*ContentHierarchy, error) {
 
 const DEFAULT_TEMPLATE = "default.html"
 
-func (g *Generator) GeneratePage(page *WebPage, hierarchy ContentHierarchy) (err error) {
+func (g *Generator) GeneratePage(page *WebPage) (err error) {
+	if page == nil {
+		return fmt.Errorf("page is nil")
+	}
+
 	if page.FrontMatter.Draft && !g.Config.IncludeDrafts {
 		return nil
 	}
 
-	templateToUse := g.GetTemplateToUse(page, hierarchy)
+	templateToUse := g.GetTemplateToUse(page)
 
 	// check if template is defined
 	if !g.Tmpl.TemplateExists(templateToUse) {
@@ -144,13 +163,12 @@ func (g *Generator) GeneratePage(page *WebPage, hierarchy ContentHierarchy) (err
 			templateData,
 			destinationDir,
 			templateToUse,
-			hierarchy,
 		)
 	} else {
-		parentPage := hierarchy.GetParent(*page)
+		parentPage := g.hierarchy.GetParent(*page)
 		if parentPage != nil {
 			err = g.renderPage(
-				g.generateChildPageData(page, parentPage, templateData, hierarchy),
+				g.generateChildPageData(page, parentPage, templateData),
 				destinationDir,
 				templateToUse,
 			)
@@ -162,14 +180,35 @@ func (g *Generator) GeneratePage(page *WebPage, hierarchy ContentHierarchy) (err
 	return
 }
 
+func (g *Generator) GetSectionPages(indexPath string, max int, offset int) (sectionPages []TemplateContent) {
+	section := g.hierarchy.GetPage(indexPath)
+	if section == nil {
+		return sectionPages
+	}
+
+	children := g.hierarchy.GetChildren(*section)
+	for i, page := range children {
+		if i < offset {
+			continue
+		}
+
+		if i >= offset+max {
+			break
+		}
+
+		sectionPages = append(sectionPages, g.PageToTemplateContent(page))
+	}
+
+	return sectionPages
+}
+
 func (g *Generator) generateIndexPages(
 	page *WebPage,
 	templateData TemplateContent,
 	destinationDir string,
 	templateToUse string,
-	hierarchy ContentHierarchy,
 ) (err error) {
-	pagingGroups := g.PagesToTemplateContents(page, hierarchy)
+	pagingGroups := g.PagesToTemplateContents(page)
 	pagingCount := len(pagingGroups)
 
 	// render redirect page
@@ -225,11 +264,10 @@ func (g *Generator) generateChildPageData(
 	page *WebPage,
 	parentPage *WebPage,
 	templateData TemplateContent,
-	hierarchy ContentHierarchy,
 ) PaginatedTemplateContent {
 
 	prev := ""
-	prevPage := hierarchy.GetPrevPage(parentPage, page)
+	prevPage := g.hierarchy.GetPrevPage(parentPage, page)
 	var prevPageData TemplateContent
 	if prevPage != nil {
 		prev = prevPage.RootPath()
@@ -237,7 +275,7 @@ func (g *Generator) generateChildPageData(
 	}
 
 	next := ""
-	nextPage := hierarchy.GetNextPage(parentPage, page)
+	nextPage := g.hierarchy.GetNextPage(parentPage, page)
 	var nextPageData TemplateContent
 	if nextPage != nil {
 		next = nextPage.RootPath()
@@ -279,9 +317,9 @@ func (g *Generator) renderPage(templateData interface{}, destinationDir string, 
 	return TidyHtml(destinationPath)
 }
 
-func (g *Generator) GetTemplateToUse(page *WebPage, hierarchy ContentHierarchy) string {
+func (g *Generator) GetTemplateToUse(page *WebPage) string {
 	templateToUse := DEFAULT_TEMPLATE
-	parent := hierarchy.GetParent(*page)
+	parent := g.hierarchy.GetParent(*page)
 
 	if page.FrontMatter.Template != "" {
 		templateToUse = page.FrontMatter.Template
@@ -326,8 +364,8 @@ func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
 	}
 }
 
-func (g *Generator) PagesToTemplateContents(indexPage *WebPage, hierarchy ContentHierarchy) [][]TemplateContent {
-	childPages := hierarchy.GetChildren(*indexPage)
+func (g *Generator) PagesToTemplateContents(indexPage *WebPage) [][]TemplateContent {
+	childPages := g.hierarchy.GetChildren(*indexPage)
 
 	paginateBy := indexPage.FrontMatter.Index.PaginateBy
 	return PaginateTransform(childPages, paginateBy, g.PageToTemplateContent)

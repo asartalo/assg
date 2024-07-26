@@ -2,7 +2,10 @@
 <html>
   <head>
     <title>{{ .Title }}</title>
-    <meta name="description" content="{{ .Description }}" />
+    <meta
+      name="description"
+      content="{{ default .Config.Description .Description }}"
+    />
   </head>
   <body>
     <main>{{ block "main" . }} {{ end }}</main>

@@ -23,7 +23,11 @@ func Build(srcDir, outputDir string, includeDrafts bool) error {
 		config.OutputDirectory = outputDir
 	}
 	config.IncludeDrafts = includeDrafts
-	gen := generator.New(config)
+	gen, err := generator.New(config)
+
+	if err != nil {
+		return err
+	}
 
 	return gen.Build()
 }

@@ -1,0 +1,23 @@
+{{ template "base.html" . }} {{define "main"}}
+<div class="intro">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+</div>
+<div class="posts">
+  {{ range sectionPages "posts" 2 0 }}
+  <article>
+    <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+    <div class="meta">
+      <time datetime="{{ .Date | timeAttr }}">
+        {{ dateInZone "Jan 2, 2006" .Date "UTC" }}
+      </time>
+    </div>
+    {{ .Content | firstParagraph }}
+  </article>
+  {{ end }}
+</div>
+<div class="pagination">
+  {{ $postsPage := sectionIndex "posts" }}
+  <a href="{{ $postsPage.Permalink }}">Earlier Posts</a>
+</div>
+{{end}}

@@ -68,6 +68,15 @@ func (ph *ContentHierarchy) GetChildren(page WebPage) []*WebPage {
 	return children
 }
 
+func (ph *ContentHierarchy) GetPage(path string) *WebPage {
+	node, ok := ph.Pages[path]
+	if ok {
+		return node.Page
+	}
+
+	return nil
+}
+
 func (ph *ContentHierarchy) GetParent(page WebPage) *WebPage {
 	path := page.RenderedPath()
 	node, ok := ph.Pages[path]

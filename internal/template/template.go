@@ -65,19 +65,6 @@ func funcs(otherFuncMap template.FuncMap) template.FuncMap {
 	return initMap
 }
 
-// func (e *Engine) assignTemplate(name string) *template.Template {
-// 	var tmpTemplate *template.Template
-// 	if e.Templates == nil {
-// 		e.Templates = template.New(name)
-// 		e.Templates = e.Templates.Funcs(funcs())
-// 		tmpTemplate = e.Templates
-// 	} else {
-// 		tmpTemplate = e.Templates.New(name)
-// 	}
-
-// 	return tmpTemplate
-// }
-
 type templateInfo struct {
 	Contents   string
 	references mset.Set[string]
