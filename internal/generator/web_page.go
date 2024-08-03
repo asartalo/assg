@@ -15,6 +15,7 @@ type IndexFields struct {
 	Template     string `toml:"template"`
 	PageTemplate string `toml:"page_template"`
 	PaginateBy   int    `toml:"paginate_by"`
+	Taxonomy     string `toml:"taxonomy"`
 }
 
 // FrontMatter represents the TOML frontmatter of a Markdown file.
@@ -31,9 +32,9 @@ type FrontMatter struct {
 
 // WebPage represents the parsed content of a Markdown file.
 type WebPage struct {
-	FrontMatter FrontMatter
-	Content     bytes.Buffer
-	Path        string
+	FrontMatter  FrontMatter
+	Content      bytes.Buffer
+	MarkdownPath string
 }
 
 func (p *WebPage) DateUnixEpoch() int64 {
@@ -45,13 +46,25 @@ func (p *WebPage) IsIndex() bool {
 	return p.FrontMatter.Index.SortBy != ""
 }
 
-func (p *WebPage) RootPath() string {
-	path := fmt.Sprintf("/%s/", filepath.ToSlash(p.RenderedPath()))
+func (p *WebPage) IsTaxonomy() bool {
+	return p.IsIndex() && p.TaxonomyType() != ""
+}
+
+func (p *WebPage) TaxonomyType() string {
+	return p.FrontMatter.Index.Taxonomy
+}
+
+func RootPath(path string) string {
+	path = fmt.Sprintf("/%s/", path)
 	if path == "//" {
 		return "/"
 	}
 
 	return path
+}
+
+func (p *WebPage) RootPath() string {
+	return RootPath(filepath.ToSlash(p.RenderedPath()))
 }
 
 // ParsePage parses a Markdown file with TOML frontmatter.
@@ -70,16 +83,16 @@ func ParsePage(path string, content []byte) (*WebPage, error) {
 		}
 	}
 
-	return &WebPage{FrontMatter: fm, Content: buf, Path: path}, nil
+	return &WebPage{FrontMatter: fm, Content: buf, MarkdownPath: path}, nil
 }
 
 func (p *WebPage) RenderedPath() string {
 	// if the file is named index.md, we want to render it as the root index.html (e.g. /index.html)
-	if p.Path == "index.md" {
+	if p.MarkdownPath == "index.md" {
 		return ""
 	}
 
-	extension := filepath.Ext(p.Path)
-	lastDotIndex := len(p.Path) - len(extension)
-	return p.Path[:lastDotIndex]
+	extension := filepath.Ext(p.MarkdownPath)
+	lastDotIndex := len(p.MarkdownPath) - len(extension)
+	return p.MarkdownPath[:lastDotIndex]
 }

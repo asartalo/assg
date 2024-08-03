@@ -1,17 +1,24 @@
 package generator
 
 import (
+	"bytes"
+	"cmp"
 	"fmt"
 	htmltpl "html/template"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/asartalo/assg/internal/config"
 	"github.com/asartalo/assg/internal/template"
+	"github.com/gertd/go-pluralize"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Generator struct {
@@ -47,6 +54,10 @@ func New(cfg *config.Config) (*Generator, error) {
 		return IndexTemplateContent{
 			TemplateContent: templateContent,
 		}
+	}
+
+	funcMap["taxonomyTerms"] = func(taxonomy string) []TaxonomyTermContent {
+		return generator.GetTaxonomyTerms(taxonomy)
 	}
 
 	srcDir := cfg.RootDirectory()
@@ -150,19 +161,26 @@ func (g *Generator) GeneratePage(page *WebPage) (err error) {
 		return fmt.Errorf(
 			"the template \"%s\" for the page \"%s\" does not exist",
 			templateToUse,
-			page.Path,
+			page.MarkdownPath,
 		)
 	}
 
 	destinationDir := path.Join(g.Config.OutputDirectoryAbsolute(), page.RenderedPath())
 	templateData := g.PageToTemplateContent(page)
-
-	if page.IsIndex() {
+	if page.IsTaxonomy() {
+		err = g.generateTaxonomyPages(
+			page,
+			templateData,
+			destinationDir,
+			templateToUse,
+		)
+	} else if page.IsIndex() {
 		err = g.generateIndexPages(
 			page,
 			templateData,
 			destinationDir,
 			templateToUse,
+			g.PagesToTemplateContents(page),
 		)
 	} else {
 		parentPage := g.hierarchy.GetParent(*page)
@@ -202,13 +220,89 @@ func (g *Generator) GetSectionPages(indexPath string, max int, offset int) (sect
 	return sectionPages
 }
 
-func (g *Generator) generateIndexPages(
+func (g *Generator) GetTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyTermContent) {
+	mapTerms := g.hierarchy.GetTaxonomyTerms(taxonomy)
+	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
+
+	for term, pages := range mapTerms {
+		rootPath := RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
+		termTemplates = append(termTemplates, TaxonomyTermContent{
+			Term:      term,
+			PageCount: len(pages),
+			RootPath:  rootPath,
+			Permalink: g.FullUrl(rootPath),
+		})
+	}
+
+	slices.SortStableFunc(termTemplates, func(a, b TaxonomyTermContent) int {
+		return cmp.Compare(a.Term, b.Term)
+	})
+	return termTemplates
+}
+
+func (g *Generator) generateTaxonomyPages(
 	page *WebPage,
 	templateData TemplateContent,
 	destinationDir string,
 	templateToUse string,
 ) (err error) {
-	pagingGroups := g.PagesToTemplateContents(page)
+	taxonomy := page.TaxonomyType()
+	termMapping := g.hierarchy.GetTaxonomyTerms(taxonomy)
+	paginateBy := page.FrontMatter.Index.PaginateBy
+
+	err = g.renderPage(templateData, destinationDir, templateToUse)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	titleCaser := cases.Title(language.English).String
+	indexTemplateToUse := page.FrontMatter.Index.PageTemplate
+	pluralizer := pluralize.NewClient()
+	taxonomySingular := pluralizer.Singular(titleCaser(taxonomy))
+	for term, pages := range termMapping {
+		termDir := path.Join(destinationDir, term)
+		taxIndexFields := page.FrontMatter.Index
+		iPageFrontMatter := FrontMatter{
+			Title: titleCaser(term),
+			Date:  now,
+			Description: fmt.Sprintf(
+				"%s: %s",
+				taxonomySingular,
+				titleCaser(term),
+			),
+			Index:    taxIndexFields,
+			Template: page.FrontMatter.Index.PageTemplate,
+		}
+		termPage := WebPage{
+			FrontMatter:  iPageFrontMatter,
+			Content:      *new(bytes.Buffer),
+			MarkdownPath: path.Join(page.RenderedPath(), fmt.Sprintf("%s.md", term)),
+		}
+
+		err = g.generateIndexPages(
+			&termPage,
+			g.PageToTemplateContent(&termPage),
+			termDir,
+			indexTemplateToUse,
+			PaginateTransform(pages, paginateBy, g.PageToTemplateContent),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return
+}
+
+func (g *Generator) generateIndexPages(
+	page *WebPage,
+	templateData TemplateContent,
+	destinationDir string,
+	templateToUse string,
+	pagingGroups [][]TemplateContent,
+) (err error) {
 	pagingCount := len(pagingGroups)
 
 	// render redirect page
@@ -360,6 +454,7 @@ func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
 		FrontMatter: page.FrontMatter,
 		Content:     htmltpl.HTML(string(page.Content.String())),
 		Config:      *g.Config,
+		RootPath:    page.RootPath(),
 		Permalink:   g.FullUrl(page.RootPath()),
 	}
 }

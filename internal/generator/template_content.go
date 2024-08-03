@@ -10,6 +10,7 @@ type TemplateContent struct {
 	FrontMatter
 	Content   htmltpl.HTML
 	Config    config.Config
+	RootPath  string
 	Permalink string
 }
 
@@ -26,4 +27,16 @@ type IndexTemplateContent struct {
 	Pages []TemplateContent
 	Prev  string
 	Next  string
+}
+
+type TaxonomyTermContent struct {
+	Term      string
+	PageCount int
+	Permalink string
+	RootPath  string
+}
+
+type TermIndexTemplateContent struct {
+	TaxonomyTermContent
+	IndexTemplateContent
 }

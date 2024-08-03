@@ -11,22 +11,56 @@ type ContentNode struct {
 	Parent string
 }
 
+type TermMap map[string][]*WebPage
+
 type ContentHierarchy struct {
 	Pages         map[string]*ContentNode
+	Taxonomies    map[string]TermMap
+	TaxonomyPage  map[string]*WebPage
 	childrenCache map[string][]*WebPage
 }
 
 func NewPageHierarchy() *ContentHierarchy {
 	return &ContentHierarchy{
-		Pages: make(map[string]*ContentNode),
+		Pages:        make(map[string]*ContentNode),
+		TaxonomyPage: make(map[string]*WebPage),
 	}
 }
 
 // TODO: REDO so that we can get parent without rewalking tree? Or maybe we should...
 func (ph *ContentHierarchy) AddPage(page *WebPage) {
+	taxonomies := page.FrontMatter.Taxonomies
+	if ph.Taxonomies == nil {
+		ph.Taxonomies = make(map[string]TermMap)
+	}
+
+	for taxonomy, terms := range taxonomies {
+		for _, term := range terms {
+			if ph.Taxonomies[taxonomy] == nil {
+				ph.Taxonomies[taxonomy] = make(TermMap)
+			}
+			ph.Taxonomies[taxonomy][term] = append(ph.Taxonomies[taxonomy][term], page)
+		}
+	}
 	ph.Pages[page.RenderedPath()] = &ContentNode{
 		Page: page,
 	}
+
+	if page.IsTaxonomy() {
+		ph.TaxonomyPage[page.TaxonomyType()] = page
+	}
+}
+
+func (ph *ContentHierarchy) GetTaxonomyTerms(taxonomy string) TermMap {
+	return ph.Taxonomies[taxonomy]
+}
+
+func (ph *ContentHierarchy) GetTaxonomyPage(taxonomy string) *WebPage {
+	return ph.TaxonomyPage[taxonomy]
+}
+
+var comparePageByDate = func(a, b *WebPage) int {
+	return cmp.Compare(b.DateUnixEpoch(), a.DateUnixEpoch())
 }
 
 func (ph *ContentHierarchy) Retree() {
@@ -39,6 +73,12 @@ func (ph *ContentHierarchy) Retree() {
 		}
 
 		node.Parent = parent
+	}
+	for taxonomy, termMap := range ph.Taxonomies {
+		for term, pages := range termMap {
+			slices.SortStableFunc(pages, comparePageByDate)
+			ph.Taxonomies[taxonomy][term] = pages
+		}
 	}
 }
 
@@ -58,11 +98,8 @@ func (ph *ContentHierarchy) GetChildren(page WebPage) []*WebPage {
 			children = append(children, node.Page)
 		}
 	}
-	// sort by  date
-	slices.SortStableFunc(children, func(a, b *WebPage) int {
-		return cmp.Compare(b.DateUnixEpoch(), a.DateUnixEpoch())
-	})
 
+	slices.SortStableFunc(children, comparePageByDate)
 	ph.childrenCache[path] = children
 
 	return children

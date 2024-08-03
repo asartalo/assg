@@ -7,12 +7,14 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/amit7itz/goset v1.2.1
 	github.com/deckarep/golang-set/v2 v2.6.0
+	github.com/gertd/go-pluralize v0.2.1
 	github.com/mangoumbrella/goldmark-figure v1.2.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	github.com/yuin/goldmark v1.7.4
 	go.abhg.dev/goldmark/frontmatter v0.2.0
+	golang.org/x/text v0.16.0
 )
 
 require (

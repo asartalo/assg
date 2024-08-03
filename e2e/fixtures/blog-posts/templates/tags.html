@@ -1,0 +1,18 @@
+{{ template "base.html" . }} {{define "main"}}
+<div class="intro">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+</div>
+<div class="tags">
+  {{ $terms := taxonomyTerms "tags" }} {{ $length := len $terms }} {{ if gt
+  $length 0 }}
+  <ul>
+    {{ range $terms }}
+    <li data-count="{{ .PageCount }}">
+      <a href="{{ .Permalink }}">{{ .Term }}</a>
+    </li>
+    {{ end }}
+  </ul>
+  {{ end }}
+</div>
+{{ end }}
