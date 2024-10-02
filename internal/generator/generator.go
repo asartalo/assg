@@ -84,50 +84,44 @@ func (g *Generator) Build() error {
 }
 
 func GatherContent(config config.Config) (*ContentHierarchy, error) {
-	outputDir := config.OutputDirectoryAbsolute()
-	contentDir := config.ContentDirectoryAbsolute()
-	hierarchy := NewPageHierarchy()
+	harvester := &harvester{
+		outputDir:  config.OutputDirectoryAbsolute(),
+		contentDir: config.ContentDirectoryAbsolute(),
+		hierarchy:  NewPageHierarchy(),
+	}
 
-	err := filepath.WalkDir(contentDir, func(dPath string, info fs.DirEntry, err error) error {
+	return harvester.harvest()
+}
+
+type harvester struct {
+	outputDir  string
+	contentDir string
+	hierarchy  *ContentHierarchy
+}
+
+func (harvester *harvester) harvest() (*ContentHierarchy, error) {
+	hierarchy := harvester.hierarchy
+
+	err := filepath.WalkDir(harvester.contentDir, func(contentPath string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if info.IsDir() {
 			// skip if basename has a dot prefix
-			if filepath.Base(dPath)[0] == '.' {
+			if filepath.Base(contentPath)[0] == '.' {
 				return filepath.SkipDir
 			}
 		} else {
-			relPath, err := filepath.Rel(contentDir, dPath)
+			relPath, err := filepath.Rel(harvester.contentDir, contentPath)
 			if err != nil {
 				return err
 			}
 
 			if isMarkdown(info) {
-				fileContent, err := os.ReadFile(dPath)
-				if err != nil {
-					return err
-				}
-
-				page, err := ParsePage(relPath, fileContent)
-				if err != nil {
-					return err
-				}
-
-				hierarchy.AddPage(page)
+				return harvester.handleMarkdownFile(contentPath, relPath)
 			} else {
-				// everything else is just copied over
-				destinationPath := path.Join(outputDir, relPath)
-				err = os.MkdirAll(filepath.Dir(destinationPath), 0755)
-				if err != nil {
-					return err
-				}
-
-				err = copyFile(dPath, destinationPath)
-				if err != nil {
-					return err
-				}
+				return harvester.copyFiles(contentPath, relPath)
 			}
 		}
 
@@ -141,6 +135,36 @@ func GatherContent(config config.Config) (*ContentHierarchy, error) {
 	hierarchy.Retree()
 
 	return hierarchy, err
+}
+
+func (harvester *harvester) handleMarkdownFile(dPath string, relPath string) error {
+	fileContent, err := os.ReadFile(dPath)
+	if err != nil {
+		return err
+	}
+
+	page, err := ParsePage(relPath, fileContent)
+	if err != nil {
+		return err
+	}
+
+	harvester.hierarchy.AddPage(page)
+
+	return nil
+}
+
+func (harvester *harvester) copyFiles(dPath string, relPath string) error {
+	destinationPath := path.Join(harvester.outputDir, relPath)
+	err := os.MkdirAll(filepath.Dir(destinationPath), 0755)
+	if err != nil {
+		return err
+	}
+
+	err = copyFile(dPath, destinationPath)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 const DEFAULT_TEMPLATE = "default.html"

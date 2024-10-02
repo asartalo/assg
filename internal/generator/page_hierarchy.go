@@ -27,7 +27,6 @@ func NewPageHierarchy() *ContentHierarchy {
 	}
 }
 
-// TODO: REDO so that we can get parent without rewalking tree? Or maybe we should...
 func (ph *ContentHierarchy) AddPage(page *WebPage) {
 	taxonomies := page.FrontMatter.Taxonomies
 	if ph.Taxonomies == nil {
