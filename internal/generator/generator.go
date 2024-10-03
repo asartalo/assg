@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/asartalo/assg/internal/config"
+	"github.com/asartalo/assg/internal/content"
 	"github.com/asartalo/assg/internal/template"
 	"github.com/gertd/go-pluralize"
 	"golang.org/x/text/cases"
@@ -22,9 +23,10 @@ import (
 )
 
 type Generator struct {
-	Config    *config.Config
-	Tmpl      *template.Engine
-	hierarchy *ContentHierarchy
+	Config     *config.Config
+	Tmpl       *template.Engine
+	hierarchy  *ContentHierarchy
+	feedAuthor *FeedAuthor
 }
 
 func New(cfg *config.Config) (*Generator, error) {
@@ -72,7 +74,7 @@ func New(cfg *config.Config) (*Generator, error) {
 	return generator, err
 }
 
-func (g *Generator) Build() error {
+func (g *Generator) Build(now time.Time) error {
 	for _, node := range g.hierarchy.Pages {
 		err := g.GeneratePage(node.Page)
 		if err != nil {
@@ -80,7 +82,113 @@ func (g *Generator) Build() error {
 		}
 	}
 
+	g.GenerateFeed(now)
+
 	return nil
+}
+
+func (g *Generator) defaultFeedAuthor() *FeedAuthor {
+	if g.feedAuthor == nil {
+		g.feedAuthor = &FeedAuthor{
+			Name: g.Config.Author,
+		}
+	}
+
+	return g.feedAuthor
+}
+
+func (g *Generator) GenerateFeed(now time.Time) error {
+	if !g.Config.GenerateFeed {
+		return nil
+	}
+
+	atomUrl := g.FullUrl("atom.xml")
+	feed := Feed{
+		Xmlns:     "http://www.w3.org/2005/Atom",
+		Lang:      "en",
+		Title:     g.Config.Title,
+		Subtitle:  g.Config.Description,
+		Id:        atomUrl,
+		Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
+		Updated:   FeedDateTime(now),
+		Links: []*FeedLink{
+			{
+				Rel:  "self",
+				Type: "application/atom+xml",
+				Href: atomUrl,
+			},
+			{
+				Rel:  "alternate",
+				Type: "text/html",
+				Href: g.SiteUrlNoTrailingslash(),
+			},
+		},
+	}
+
+	for _, page := range g.hierarchy.SortedPages() {
+		if page.IsTaxonomy() || page.IsIndex() {
+			continue
+		}
+
+		entry, err := g.createFeedEntry(page)
+		if err != nil {
+			return err
+		}
+
+		feed.Entries = append(feed.Entries, entry)
+	}
+
+	atomFilePath := g.OutputPath("atom.xml")
+
+	atomFile, err := os.OpenFile(atomFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	err = feed.WriteXML(atomFile)
+	if err != nil {
+		return err
+	}
+
+	atomFile.Close()
+	return TidyXml(atomFilePath)
+}
+
+func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
+	pageUrl := g.FullUrl(page.RootPath())
+
+	item := &FeedEntry{
+		Lang:  "en",
+		Title: page.FrontMatter.Title,
+		Links: []*FeedLink{
+			{Rel: "alternate", Type: "text/html", Href: pageUrl},
+		},
+		Published: FeedDateTime(page.FrontMatter.Date),
+		Updated:   FeedDateTime(page.FrontMatter.Date),
+		Id:        pageUrl,
+		Authors:   []*FeedAuthor{g.defaultFeedAuthor()},
+	}
+
+	// If the content is too short, use that instead of summary
+	if page.Content.Len() > 500 {
+		summary, err := page.Summary()
+		if err != nil {
+			return nil, err
+		}
+
+		item.Summary = &FeedEntrySummary{
+			Type:    "html",
+			Content: summary,
+		}
+	} else {
+		item.Content = &FeedContent{
+			Type:    "html",
+			Base:    pageUrl,
+			Content: strings.TrimSpace(page.Content.String()),
+		}
+	}
+
+	return item, nil
 }
 
 func GatherContent(config config.Config) (*ContentHierarchy, error) {
@@ -143,7 +251,7 @@ func (harvester *harvester) handleMarkdownFile(dPath string, relPath string) err
 		return err
 	}
 
-	page, err := ParsePage(relPath, fileContent)
+	page, err := content.ParsePage(relPath, fileContent)
 	if err != nil {
 		return err
 	}
@@ -169,7 +277,11 @@ func (harvester *harvester) copyFiles(dPath string, relPath string) error {
 
 const DEFAULT_TEMPLATE = "default.html"
 
-func (g *Generator) GeneratePage(page *WebPage) (err error) {
+func (g *Generator) OutputPath(endPath string) string {
+	return path.Join(g.Config.OutputDirectoryAbsolute(), endPath)
+}
+
+func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
 	if page == nil {
 		return fmt.Errorf("page is nil")
 	}
@@ -189,7 +301,7 @@ func (g *Generator) GeneratePage(page *WebPage) (err error) {
 		)
 	}
 
-	destinationDir := path.Join(g.Config.OutputDirectoryAbsolute(), page.RenderedPath())
+	destinationDir := g.OutputPath(page.RenderedPath())
 	templateData := g.PageToTemplateContent(page)
 	if page.IsTaxonomy() {
 		err = g.generateTaxonomyPages(
@@ -249,7 +361,7 @@ func (g *Generator) GetTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyT
 	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
 
 	for term, pages := range mapTerms {
-		rootPath := RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
+		rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
 		termTemplates = append(termTemplates, TaxonomyTermContent{
 			Term:      term,
 			PageCount: len(pages),
@@ -265,7 +377,7 @@ func (g *Generator) GetTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyT
 }
 
 func (g *Generator) generateTaxonomyPages(
-	page *WebPage,
+	page *content.WebPage,
 	templateData TemplateContent,
 	destinationDir string,
 	templateToUse string,
@@ -287,7 +399,7 @@ func (g *Generator) generateTaxonomyPages(
 	for term, pages := range termMapping {
 		termDir := path.Join(destinationDir, term)
 		taxIndexFields := page.FrontMatter.Index
-		iPageFrontMatter := FrontMatter{
+		iPageFrontMatter := content.FrontMatter{
 			Title: titleCaser(term),
 			Date:  now,
 			Description: fmt.Sprintf(
@@ -298,7 +410,7 @@ func (g *Generator) generateTaxonomyPages(
 			Index:    taxIndexFields,
 			Template: page.FrontMatter.Index.PageTemplate,
 		}
-		termPage := WebPage{
+		termPage := content.WebPage{
 			FrontMatter:  iPageFrontMatter,
 			Content:      *new(bytes.Buffer),
 			MarkdownPath: path.Join(page.RenderedPath(), fmt.Sprintf("%s.md", term)),
@@ -321,7 +433,7 @@ func (g *Generator) generateTaxonomyPages(
 }
 
 func (g *Generator) generateIndexPages(
-	page *WebPage,
+	page *content.WebPage,
 	templateData TemplateContent,
 	destinationDir string,
 	templateToUse string,
@@ -379,8 +491,8 @@ func (g *Generator) generateIndexPages(
 }
 
 func (g *Generator) generateChildPageData(
-	page *WebPage,
-	parentPage *WebPage,
+	page *content.WebPage,
+	parentPage *content.WebPage,
 	templateData TemplateContent,
 ) PaginatedTemplateContent {
 
@@ -435,7 +547,7 @@ func (g *Generator) renderPage(templateData interface{}, destinationDir string, 
 	return TidyHtml(destinationPath)
 }
 
-func (g *Generator) GetTemplateToUse(page *WebPage) string {
+func (g *Generator) GetTemplateToUse(page *content.WebPage) string {
 	templateToUse := DEFAULT_TEMPLATE
 	parent := g.hierarchy.GetParent(*page)
 
@@ -449,7 +561,15 @@ func (g *Generator) GetTemplateToUse(page *WebPage) string {
 }
 
 func (g *Generator) FullUrl(path string) string {
-	return strings.TrimRight(g.Config.BaseURL, "/") + "/" + strings.TrimLeft(filepath.ToSlash(path), "/")
+	return g.SiteUrlWithTrailingSlash() + strings.TrimLeft(filepath.ToSlash(path), "/")
+}
+
+func (g *Generator) SiteUrlNoTrailingslash() string {
+	return strings.TrimRight(g.Config.BaseURL, "/")
+}
+
+func (g *Generator) SiteUrlWithTrailingSlash() string {
+	return g.SiteUrlNoTrailingslash() + "/"
 }
 
 func copyFile(from, to string) error {
@@ -473,7 +593,7 @@ func copyFile(from, to string) error {
 	return err
 }
 
-func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
+func (g *Generator) PageToTemplateContent(page *content.WebPage) TemplateContent {
 	return TemplateContent{
 		FrontMatter: page.FrontMatter,
 		Content:     htmltpl.HTML(string(page.Content.String())),
@@ -483,7 +603,7 @@ func (g *Generator) PageToTemplateContent(page *WebPage) TemplateContent {
 	}
 }
 
-func (g *Generator) PagesToTemplateContents(indexPage *WebPage) [][]TemplateContent {
+func (g *Generator) PagesToTemplateContents(indexPage *content.WebPage) [][]TemplateContent {
 	childPages := g.hierarchy.GetChildren(*indexPage)
 
 	paginateBy := indexPage.FrontMatter.Index.PaginateBy

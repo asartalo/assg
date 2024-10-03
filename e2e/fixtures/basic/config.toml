@@ -1,8 +1,6 @@
 base_url = "http://example.com/"
-title = "Test Blog"
-description = "A test blog for ASSG"
-generate_feed = true
-feed_limit = 10
+title = "Test Site"
+description = "A test site for ASSG"
 
 [markdown]
 highlight_code = true

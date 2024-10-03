@@ -1,4 +1,4 @@
-package generator
+package markdown
 
 import (
 	figure "github.com/mangoumbrella/goldmark-figure"
@@ -9,7 +9,7 @@ import (
 	"go.abhg.dev/goldmark/frontmatter"
 )
 
-var MdParser = goldmark.New(
+var Parser = goldmark.New(
 	goldmark.WithExtensions(
 		extension.Table,
 		extension.Strikethrough,

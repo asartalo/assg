@@ -3,17 +3,19 @@ package commands
 import (
 	"html/template"
 	"path"
+	"time"
 
 	"github.com/asartalo/assg/internal/config"
+	"github.com/asartalo/assg/internal/content"
 	"github.com/asartalo/assg/internal/generator"
 )
 
 type TemplateContent struct {
-	generator.FrontMatter
+	content.FrontMatter
 	Content template.HTML
 }
 
-func Build(srcDir, outputDir string, includeDrafts bool) error {
+func Build(srcDir, outputDir string, includeDrafts bool, now time.Time) error {
 	config, err := config.Load(path.Join(srcDir, "config.toml"))
 	if err != nil {
 		return err
@@ -29,5 +31,5 @@ func Build(srcDir, outputDir string, includeDrafts bool) error {
 		return err
 	}
 
-	return gen.Build()
+	return gen.Build(now)
 }

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Test Blog</title>
+  <subtitle>A test blog for ASSG</subtitle>
+  <id>http://example.com/atom.xml</id>
+  <link rel="self" type="application/atom+xml" href="http://example.com/atom.xml"/>
+  <link rel="alternate" type="text/html" href="http://example.com"/>
+  <generator uri="https://github.com/asartalo/assg">ASSG</generator>
+  <updated>2024-03-01T10:00:00Z</updated>
+  <entry xml:lang="en">
+    <title>Unleashing My Inner Artist</title>
+    <id>http://example.com/posts/unleashing-my-inner-artist/</id>
+    <published>2024-02-29T16:55:00Z</published>
+    <updated>2024-02-29T16:55:00Z</updated>
+    <summary type="html">&lt;p&gt;Trying my hand at watercolor painting for the first time.&lt;/p&gt;</summary>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/unleashing-my-inner-artist/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Nature Escape</title>
+    <id>http://example.com/posts/nature-escape/</id>
+    <published>2024-02-22T09:20:00Z</published>
+    <updated>2024-02-22T09:20:00Z</updated>
+    <summary type="html">&lt;p&gt;Hiked to a breathtaking waterfall and spent the afternoon meditating by the stream.&lt;/p&gt;</summary>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/nature-escape/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>A Taste of Home</title>
+    <id>http://example.com/posts/a-taste-of-home/</id>
+    <published>2024-02-18T12:05:00Z</published>
+    <updated>2024-02-18T12:05:00Z</updated>
+    <content type="html" base="http://example.com/posts/a-taste-of-home/">&lt;p&gt;Baked a delicious apple pie from scratch using my grandmother&#39;s secret recipe.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/a-taste-of-home/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Lost in Pages</title>
+    <id>http://example.com/posts/lost-in-pages/</id>
+    <published>2024-02-12T21:10:00Z</published>
+    <updated>2024-02-12T21:10:00Z</updated>
+    <content type="html" base="http://example.com/posts/lost-in-pages/">&lt;p&gt;Finished a novel that made me question everything I thought I knew about life and love.&lt;/p&gt;&#xA;&lt;p&gt;This is a most wonderful experience.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/lost-in-pages/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Unexpected Discoveries</title>
+    <id>http://example.com/posts/unexpected-discoveries/</id>
+    <published>2024-02-05T18:45:00Z</published>
+    <updated>2024-02-05T18:45:00Z</updated>
+    <content type="html" base="http://example.com/posts/unexpected-discoveries/">&lt;p&gt;Stumbled upon a street musician playing a hauntingly beautiful melody on a handcrafted flute.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/unexpected-discoveries/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Day 2</title>
+    <id>http://example.com/posts/day-2/</id>
+    <published>2024-02-02T14:30:00Z</published>
+    <updated>2024-02-02T14:30:00Z</updated>
+    <content type="html" base="http://example.com/posts/day-2/">&lt;p&gt;Today I discovered a hidden coffee shop downtown with the most amazing latte art.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/day-2/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Day 1</title>
+    <id>http://example.com/posts/day-1/</id>
+    <published>2024-02-01T10:00:00Z</published>
+    <updated>2024-02-01T10:00:00Z</updated>
+    <content type="html" base="http://example.com/posts/day-1/">&lt;p&gt;This is what I did.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/day-1/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>My Blog</title>
+    <id>http://example.com/</id>
+    <published>0001-01-01T00:00:00Z</published>
+    <updated>0001-01-01T00:00:00Z</updated>
+    <content type="html" base="http://example.com/">&lt;p&gt;This is a blog.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/"/>
+  </entry>
+</feed>

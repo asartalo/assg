@@ -4,10 +4,11 @@ import (
 	htmltpl "html/template"
 
 	"github.com/asartalo/assg/internal/config"
+	"github.com/asartalo/assg/internal/content"
 )
 
 type TemplateContent struct {
-	FrontMatter
+	content.FrontMatter
 	Content   htmltpl.HTML
 	Config    config.Config
 	RootPath  string

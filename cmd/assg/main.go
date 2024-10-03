@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/asartalo/assg/internal/commands"
 	"github.com/spf13/cobra"
@@ -31,7 +32,7 @@ var buildCmd = &cobra.Command{
 		}
 
 		outputDir := filepath.Join(srcDir, "public")
-		err = commands.Build(srcDir, outputDir, false)
+		err = commands.Build(srcDir, outputDir, false, time.Now())
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -44,7 +45,7 @@ var serveCmd = &cobra.Command{
 	Short: "Serve the static site",
 	Long:  `Starts a local server to preview the static site.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting server...")
+		fmt.Println("Starting server... TBI")
 		// Implement your serve logic here
 	},
 }

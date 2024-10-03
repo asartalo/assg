@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var knownTextFileExtensions = []string{".html", ".css", ".js", ".txt"}
+var knownTextFileExtensions = []string{".html", ".css", ".js", ".txt", ".xml"}
 
 func contains(slice []string, item string) bool {
 	for _, a := range slice {

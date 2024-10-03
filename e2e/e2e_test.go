@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/asartalo/assg/internal/commands"
 	"github.com/stretchr/testify/suite"
@@ -48,8 +49,10 @@ func (suite *E2ETestSuite) RunBuildTest(fixture string) {
 
 	siteDir := path.Join(suite.FixtureDirectory, fixture)
 	expectedDir := path.Join(siteDir, "public-expected")
+	now, err := time.Parse(time.RFC3339, "2024-03-01T10:00:00Z")
+	suite.NoError(err)
 
-	err = commands.Build(siteDir, publicDir, false)
+	err = commands.Build(siteDir, publicDir, false, now)
 	suite.NoError(err)
 
 	assertDirContents(suite.T(), expectedDir, publicDir)

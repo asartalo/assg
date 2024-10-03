@@ -23,36 +23,42 @@ func New(funcMap template.FuncMap) *Engine {
 	return &Engine{funcMap: funcs(funcMap)}
 }
 
+func FirstParagraphFromHtml(htmlContent template.HTML) template.HTML {
+	// Regular expression to find the first paragraph
+	paragraphRegex := regexp.MustCompile(`(?s)<p>(.+?)</p>`)
+
+	// Find the first paragraph match
+	match := paragraphRegex.FindStringSubmatch(string(htmlContent))
+
+	if len(match) > 1 {
+		// Paragraph found, return it
+		return template.HTML(match[0])
+	}
+
+	// No paragraph found, extract first 30 words
+	words := strings.Fields(strings.TrimSpace(string(htmlContent)))
+	maxWords := 30
+
+	if len(words) > maxWords {
+		words = words[:maxWords]
+	}
+
+	// Add ellipsis if needed
+	if len(words) == maxWords {
+		words = append(words, "...")
+	}
+
+	// Construct and return paragraph-like content
+	return template.HTML("<p>" + strings.Join(words, " ") + "</p>")
+}
+
+func FirstParagraphFromString(content string) string {
+	return string(FirstParagraphFromHtml(template.HTML(content)))
+}
+
 func funcs(otherFuncMap template.FuncMap) template.FuncMap {
 	initMap := sprig.HtmlFuncMap()
-	initMap["firstParagraph"] = func(htmlContent template.HTML) template.HTML {
-		// Regular expression to find the first paragraph
-		paragraphRegex := regexp.MustCompile(`(?s)<p>(.+?)</p>`)
-
-		// Find the first paragraph match
-		match := paragraphRegex.FindStringSubmatch(string(htmlContent))
-
-		if len(match) > 1 {
-			// Paragraph found, return it
-			return template.HTML(match[0])
-		}
-
-		// No paragraph found, extract first 30 words
-		words := strings.Fields(strings.TrimSpace(string(htmlContent)))
-		maxWords := 30
-
-		if len(words) > maxWords {
-			words = words[:maxWords]
-		}
-
-		// Add ellipsis if needed
-		if len(words) == maxWords {
-			words = append(words, "...")
-		}
-
-		// Construct and return paragraph-like content
-		return template.HTML("<p>" + strings.Join(words, " ") + "</p>")
-	}
+	initMap["firstParagraph"] = FirstParagraphFromHtml
 
 	initMap["timeAttr"] = func(time time.Time) string {
 		return time.Format("2006-01-02T15:04:05Z07:00")
