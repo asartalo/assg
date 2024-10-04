@@ -59,7 +59,6 @@ func FirstParagraphFromString(content string) string {
 func funcs(otherFuncMap template.FuncMap) template.FuncMap {
 	initMap := sprig.HtmlFuncMap()
 	initMap["firstParagraph"] = FirstParagraphFromHtml
-
 	initMap["timeAttr"] = func(time time.Time) string {
 		return time.Format("2006-01-02T15:04:05Z07:00")
 	}

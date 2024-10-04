@@ -6,6 +6,7 @@
       name="description"
       content="{{ default .Config.Description .Description }}"
     />
+    {{ atomLink }}
   </head>
   <body>
     <main>{{ block "main" . }} {{ end }}</main>

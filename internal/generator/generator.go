@@ -29,18 +29,7 @@ type Generator struct {
 	feedAuthor *FeedAuthor
 }
 
-func New(cfg *config.Config) (*Generator, error) {
-	generator := &Generator{
-		Config: cfg,
-	}
-
-	hierarchy, err := GatherContent(*cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	generator.hierarchy = hierarchy
-
+func defineFuncs(generator *Generator) htmltpl.FuncMap {
 	funcMap := make(htmltpl.FuncMap)
 	funcMap["sectionPages"] = func(indexPath string, max, offset int) []TemplateContent {
 		return generator.GetSectionPages(indexPath, max, offset)
@@ -62,7 +51,34 @@ func New(cfg *config.Config) (*Generator, error) {
 		return generator.GetTaxonomyTerms(taxonomy)
 	}
 
+	funcMap["atomUrl"] = func() string {
+		return generator.FullUrl("atom.xml")
+	}
+
+	funcMap["atomLink"] = func() htmltpl.HTML {
+		return htmltpl.HTML(fmt.Sprintf(
+			`<link rel="alternate" type="application/atom+xml" href="%s">`,
+			generator.FullUrl("atom.xml"),
+		))
+	}
+
+	return funcMap
+}
+
+func New(cfg *config.Config) (*Generator, error) {
 	srcDir := cfg.RootDirectory()
+
+	generator := &Generator{
+		Config: cfg,
+	}
+
+	hierarchy, err := GatherContent(*cfg)
+	if err != nil {
+		return nil, err
+	}
+	generator.hierarchy = hierarchy
+
+	funcMap := defineFuncs(generator)
 	templates := template.New(funcMap)
 	err = templates.LoadTemplates(path.Join(srcDir, "templates"))
 	if err != nil {
