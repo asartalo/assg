@@ -34,7 +34,7 @@
     <id>http://example.com/posts/a-taste-of-home/</id>
     <published>2024-02-18T12:05:00Z</published>
     <updated>2024-02-18T12:05:00Z</updated>
-    <content type="html" base="http://example.com/posts/a-taste-of-home/">&lt;p&gt;Baked a delicious apple pie from scratch using my grandmother&#39;s secret recipe.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/posts/a-taste-of-home/">&lt;p&gt;Baked a delicious apple pie from scratch using my grandmother’s secret recipe.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>

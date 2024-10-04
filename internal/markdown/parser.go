@@ -16,6 +16,7 @@ var Parser = goldmark.New(
 		extension.Footnote,
 		&frontmatter.Extender{},
 		figure.Figure,
+		Typographer,
 	),
 	goldmark.WithParserOptions(
 		parser.WithAutoHeadingID(),
