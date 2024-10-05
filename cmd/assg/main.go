@@ -12,8 +12,11 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "assg",
-	Short: "ASSG is Asartalo's Static Site Generator",
-	Long:  `ASSG (Asartalo's Static Site Generator) is a static site generator built with love by Asartalo.`,
+	Short: "ASSG is Asartalo’s Static Site Generator",
+	Long: "ASSG (Asartalo’s Static Site Generator) is a static site generator custom\n" +
+		"built for Asartalo’s website at https://brainchildprojects.com and for other\n" +
+		"projects.\n\n" +
+		"Visit https://github.com/asartalo/assg for the source and for more information.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
