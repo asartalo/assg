@@ -15,6 +15,15 @@ type TemplateContent struct {
 	Permalink string
 }
 
+func (t TemplateContent) HasExtra(key string) bool {
+	_, ok := t.Extra[key]
+	return ok
+}
+
+func (t TemplateContent) GetExtra(key string) any {
+	return t.Extra[key]
+}
+
 type PaginatedTemplateContent struct {
 	TemplateContent
 	Prev     string

@@ -7,20 +7,19 @@ import (
 )
 
 type Config struct {
-	BaseURL          string                 `toml:"base_url"`
-	Title            string                 `toml:"title"`
-	Description      string                 `toml:"description"`
-	DefaultLanguage  string                 `toml:"default_language"`
-	Author           string                 `toml:"author"`
-	CompileSass      bool                   `toml:"compile_sass"`
-	GenerateFeed     bool                   `toml:"generate_feed"`
-	FeedLimit        int                    `toml:"feed_limit"`
-	Taxonomies       []TaxonomyConfig       `toml:"taxonomies"`
-	Markdown         MarkdownConfig         `toml:"markdown"`
-	Extra            map[string]interface{} `toml:"extra"`
-	ContentDirectory string                 `toml:"content_directory"`
-	OutputDirectory  string                 `toml:"output_directory"`
-	IncludeDrafts    bool                   `toml:"include_drafts"`
+	BaseURL          string           `toml:"base_url"`
+	Title            string           `toml:"title"`
+	Description      string           `toml:"description"`
+	DefaultLanguage  string           `toml:"default_language"`
+	Author           string           `toml:"author"`
+	CompileSass      bool             `toml:"compile_sass"`
+	GenerateFeed     bool             `toml:"generate_feed"`
+	FeedLimit        int              `toml:"feed_limit"`
+	Taxonomies       []TaxonomyConfig `toml:"taxonomies"`
+	Markdown         MarkdownConfig   `toml:"markdown"`
+	ContentDirectory string           `toml:"content_directory"`
+	OutputDirectory  string           `toml:"output_directory"`
+	IncludeDrafts    bool             `toml:"include_drafts"`
 	rootDirectory    string
 }
 

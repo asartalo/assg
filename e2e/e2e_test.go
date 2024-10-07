@@ -30,8 +30,11 @@ func (suite *E2ETestSuite) TestStaticFiles() {
 }
 
 func (suite *E2ETestSuite) TestBlogExample() {
-	// Static files are just copied over to the public directory
 	suite.RunBuildTest("blog-posts")
+}
+
+func (suite *E2ETestSuite) TestExtraData() {
+	suite.RunBuildTest("extra-data")
 }
 
 func (suite *E2ETestSuite) SetupSuite() {

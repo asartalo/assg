@@ -42,6 +42,16 @@ type FrontMatter struct {
 	Taxonomies  map[string][]string `toml:"taxonomies"`
 	Template    string              `toml:"template"`
 	Index       IndexFields         `toml:"index"`
+	Extra       map[string]any      `toml:"extra"`
+}
+
+func (f FrontMatter) HasExtraData(key string) bool {
+	_, ok := f.Extra[key]
+	return ok
+}
+
+func (f FrontMatter) GetExtraData(key string) interface{} {
+	return f.Extra[key]
 }
 
 // WebPage represents the parsed content of a Markdown file.

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ .Title }}</title>
+  <meta name="description" content="{{ .Description }}" />
+</head>
+<body>
+  <main>
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+    {{ if .HasExtra "status" }}
+      <p>Status: {{ .GetExtra "status" }}</p>
+    {{ end }}
+    {{ if .HasExtra "number" }}
+      <p>Number: {{ .GetExtra "number" }}</p>
+    {{- end }}
+  </main>
+</body>
+</html>

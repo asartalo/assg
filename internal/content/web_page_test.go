@@ -28,6 +28,33 @@ Hello.
 	a.Equal(false, page.IsIndex())
 }
 
+func TestParsingPageWithExtraData(t *testing.T) {
+	a := assert.New(t)
+	md := `+++
+title = "Extra Test Page"
+date = "2024-02-01T10:00:00Z"
+description = "Test page with extra data"
+
+[extra]
+key = "value"
+number = 1
++++
+
+Extra extra.
+`
+	page, err := ParsePage("test.md", []byte(md))
+
+	a.NoError(err)
+	a.Equal("Extra Test Page", page.FrontMatter.Title)
+	a.Equal(time.Date(2024, time.February, 1, 10, 0, 0, 0, time.UTC), page.FrontMatter.Date)
+	a.Equal("Test page with extra data", page.FrontMatter.Description)
+	a.Equal("<p>Extra extra.</p>\n", page.Content.String())
+	a.Equal(true, page.FrontMatter.HasExtraData("key"))
+	a.Equal(false, page.FrontMatter.HasExtraData("foo"))
+	a.Equal("value", page.FrontMatter.GetExtraData("key"))
+	a.Equal(int64(1), page.FrontMatter.GetExtraData("number"))
+}
+
 func TestParsingPageWithIndex(t *testing.T) {
 	a := assert.New(t)
 	md := `+++
