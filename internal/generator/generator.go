@@ -546,6 +546,8 @@ func (g *Generator) generateIndexPages(
 			Pages:           group,
 			Prev:            prev,
 			Next:            next,
+			CurrentPage:     i + 1,
+			TotalPages:      pagingCount,
 		}
 
 		err = g.renderPage(indexTemplateData, destinDir, templateToUse)
@@ -658,6 +660,12 @@ func copyFile(from, to string) error {
 }
 
 func (g *Generator) PageToTemplateContent(page *content.WebPage) TemplateContent {
+	summary := ""
+	actualSummary, err := page.Summary()
+	if err == nil {
+		summary = actualSummary
+	}
+
 	return TemplateContent{
 		FrontMatter: page.FrontMatter,
 		Content:     htmltpl.HTML(string(page.Content.String())),
@@ -665,6 +673,7 @@ func (g *Generator) PageToTemplateContent(page *content.WebPage) TemplateContent
 		RootPath:    page.RootPath(),
 		Permalink:   g.FullUrl(page.RootPath()),
 		Path:        page.RenderedPath(),
+		Summary:     htmltpl.HTML(summary),
 	}
 }
 

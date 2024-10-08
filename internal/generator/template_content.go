@@ -14,6 +14,7 @@ type TemplateContent struct {
 	Path      string
 	RootPath  string
 	Permalink string
+	Summary   htmltpl.HTML
 }
 
 func (t TemplateContent) HasExtra(key string) bool {
@@ -35,9 +36,11 @@ type PaginatedTemplateContent struct {
 
 type IndexTemplateContent struct {
 	TemplateContent
-	Pages []TemplateContent
-	Prev  string
-	Next  string
+	Pages       []TemplateContent
+	Prev        string
+	Next        string
+	CurrentPage int
+	TotalPages  int
 }
 
 type TaxonomyTermContent struct {

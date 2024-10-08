@@ -19,7 +19,11 @@
 <div class="pagination">
   {{ if .Prev }}
   <a href="{{ .Prev }}">Later Posts</a>
-  {{ end }} {{ if .Next }}
+  {{ end }}
+  <span>
+    {{ .CurrentPage }} of {{ .TotalPages }}
+  </span>
+  {{ if .Next }}
   <a href="{{ .Next }}">Earlier Posts</a>
   {{ end }}
 </div>
