@@ -22,11 +22,14 @@ import (
 	"golang.org/x/text/language"
 )
 
+type TermTTC map[string]*TaxonomyTermContent
+
 type Generator struct {
-	Config     *config.Config
-	Tmpl       *template.Engine
-	hierarchy  *ContentHierarchy
-	feedAuthor *FeedAuthor
+	Config        *config.Config
+	Tmpl          *template.Engine
+	hierarchy     *ContentHierarchy
+	feedAuthor    *FeedAuthor
+	taxonomyCache map[string]TermTTC
 }
 
 func defineFuncs(generator *Generator) htmltpl.FuncMap {
@@ -47,8 +50,12 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 		}
 	}
 
-	funcMap["taxonomyTerms"] = func(taxonomy string) []TaxonomyTermContent {
+	funcMap["taxonomyTerms"] = func(taxonomy string) []*TaxonomyTermContent {
 		return generator.GetAllTaxonomyTerms(taxonomy)
+	}
+
+	funcMap["pageTaxonomy"] = func(path, taxonomy string) []*TaxonomyTermContent {
+		return generator.GetTaxonomyTermsForPage(path, taxonomy)
 	}
 
 	funcMap["atomUrl"] = func() string {
@@ -60,10 +67,6 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 			`<link rel="alternate" type="application/atom+xml" href="%s">`,
 			generator.FullUrl("atom.xml"),
 		))
-	}
-
-	funcMap["pageTaxonomy"] = func(path, taxonomy string) []TaxonomyTermContent {
-		return generator.GetTaxonomyTermsForPage(path, taxonomy)
 	}
 
 	return funcMap
@@ -90,6 +93,7 @@ func New(cfg *config.Config) (*Generator, error) {
 	}
 
 	generator.Tmpl = templates
+	generator.taxonomyCache = make(map[string]TermTTC)
 
 	return generator, err
 }
@@ -376,44 +380,60 @@ func (g *Generator) GetSectionPages(indexPath string, max int, offset int) (sect
 	return sectionPages
 }
 
-func (g *Generator) GetAllTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyTermContent) {
+func (g *Generator) ensurePopulatedTaxonomyCache(taxonomy string) TermTTC {
+	if cached, ok := g.taxonomyCache[taxonomy]; ok {
+		return cached
+	}
+
+	ttcCache := make(TermTTC)
+	g.taxonomyCache[taxonomy] = ttcCache
+
 	mapTerms := g.hierarchy.GetTaxonomyTerms(taxonomy)
 	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
 
 	for term, pages := range mapTerms {
-		rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
-		termTemplates = append(termTemplates, TaxonomyTermContent{
-			Term:      term,
-			PageCount: len(pages),
-			RootPath:  rootPath,
-			Permalink: g.FullUrl(rootPath),
-		})
+		if _, ok := ttcCache[term]; !ok {
+			rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
+			ttc := &TaxonomyTermContent{
+				Term:      term,
+				PageCount: len(pages),
+				RootPath:  rootPath,
+				Permalink: g.FullUrl(rootPath),
+			}
+			ttcCache[term] = ttc
+		}
 	}
 
-	slices.SortStableFunc(termTemplates, func(a, b TaxonomyTermContent) int {
+	g.taxonomyCache[taxonomy] = ttcCache
+
+	return ttcCache
+}
+
+func (g *Generator) GetAllTaxonomyTerms(taxonomy string) (termTemplates []*TaxonomyTermContent) {
+	ttcCache := g.ensurePopulatedTaxonomyCache(taxonomy)
+
+	for _, cached := range ttcCache {
+		termTemplates = append(termTemplates, cached)
+	}
+
+	slices.SortStableFunc(termTemplates, func(a, b *TaxonomyTermContent) int {
 		return cmp.Compare(a.Term, b.Term)
 	})
+
 	return termTemplates
 }
 
-func (g *Generator) GetTaxonomyTermsForPage(rootPath string, taxonomy string) (termTemplates []TaxonomyTermContent) {
+func (g *Generator) GetTaxonomyTermsForPage(rootPath string, taxonomy string) (termTemplates []*TaxonomyTermContent) {
 	ofPage := g.hierarchy.GetPage(rootPath)
-	mapTerms := g.hierarchy.GetTaxonomyTerms(taxonomy)
+	ttcCache := g.ensurePopulatedTaxonomyCache(taxonomy)
 	terms := ofPage.FrontMatter.Taxonomies[taxonomy]
-	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
 
 	for _, term := range terms {
-		pages := mapTerms[term]
-		rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
-		termTemplates = append(termTemplates, TaxonomyTermContent{
-			Term:      term,
-			PageCount: len(pages),
-			RootPath:  rootPath,
-			Permalink: g.FullUrl(rootPath),
-		})
+		ttc := ttcCache[term]
+		termTemplates = append(termTemplates, ttc)
 	}
 
-	slices.SortStableFunc(termTemplates, func(a, b TaxonomyTermContent) int {
+	slices.SortStableFunc(termTemplates, func(a, b *TaxonomyTermContent) int {
 		return cmp.Compare(a.Term, b.Term)
 	})
 
