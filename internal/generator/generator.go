@@ -48,7 +48,7 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 	}
 
 	funcMap["taxonomyTerms"] = func(taxonomy string) []TaxonomyTermContent {
-		return generator.GetTaxonomyTerms(taxonomy)
+		return generator.GetAllTaxonomyTerms(taxonomy)
 	}
 
 	funcMap["atomUrl"] = func() string {
@@ -60,6 +60,10 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 			`<link rel="alternate" type="application/atom+xml" href="%s">`,
 			generator.FullUrl("atom.xml"),
 		))
+	}
+
+	funcMap["pageTaxonomy"] = func(path, taxonomy string) []TaxonomyTermContent {
+		return generator.GetTaxonomyTermsForPage(path, taxonomy)
 	}
 
 	return funcMap
@@ -372,7 +376,7 @@ func (g *Generator) GetSectionPages(indexPath string, max int, offset int) (sect
 	return sectionPages
 }
 
-func (g *Generator) GetTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyTermContent) {
+func (g *Generator) GetAllTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyTermContent) {
 	mapTerms := g.hierarchy.GetTaxonomyTerms(taxonomy)
 	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
 
@@ -389,6 +393,30 @@ func (g *Generator) GetTaxonomyTerms(taxonomy string) (termTemplates []TaxonomyT
 	slices.SortStableFunc(termTemplates, func(a, b TaxonomyTermContent) int {
 		return cmp.Compare(a.Term, b.Term)
 	})
+	return termTemplates
+}
+
+func (g *Generator) GetTaxonomyTermsForPage(rootPath string, taxonomy string) (termTemplates []TaxonomyTermContent) {
+	ofPage := g.hierarchy.GetPage(rootPath)
+	mapTerms := g.hierarchy.GetTaxonomyTerms(taxonomy)
+	terms := ofPage.FrontMatter.Taxonomies[taxonomy]
+	taxonomyIndexPage := g.hierarchy.GetTaxonomyPage(taxonomy)
+
+	for _, term := range terms {
+		pages := mapTerms[term]
+		rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
+		termTemplates = append(termTemplates, TaxonomyTermContent{
+			Term:      term,
+			PageCount: len(pages),
+			RootPath:  rootPath,
+			Permalink: g.FullUrl(rootPath),
+		})
+	}
+
+	slices.SortStableFunc(termTemplates, func(a, b TaxonomyTermContent) int {
+		return cmp.Compare(a.Term, b.Term)
+	})
+
 	return termTemplates
 }
 
@@ -616,6 +644,7 @@ func (g *Generator) PageToTemplateContent(page *content.WebPage) TemplateContent
 		Config:      *g.Config,
 		RootPath:    page.RootPath(),
 		Permalink:   g.FullUrl(page.RootPath()),
+		Path:        page.RenderedPath(),
 	}
 }
 

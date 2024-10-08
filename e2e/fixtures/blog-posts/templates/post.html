@@ -1,6 +1,14 @@
-{{ template "base.html" . }} {{define "main"}}
+{{ template "base.html" . }} {{ define "main" }}
 <h1>{{ .Title }}</h1>
 {{ .Content }}
+
+<ul class="tags">
+  {{ range pageTaxonomy .Path "tags"  }}
+    <li>
+      <a href="{{ .Permalink }}">{{ .Term }}</a>
+    </li>
+  {{ end }}
+</ul>
 
 <div class="pagination">
   {{ if .Prev }}

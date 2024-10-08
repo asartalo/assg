@@ -11,6 +11,7 @@ type TemplateContent struct {
 	content.FrontMatter
 	Content   htmltpl.HTML
 	Config    config.Config
+	Path      string
 	RootPath  string
 	Permalink string
 }
