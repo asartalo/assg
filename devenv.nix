@@ -7,7 +7,7 @@
   # https://devenv.sh/packages/
   packages = with pkgs; [
     nodejs_18
-    html-tidy
+    entr
   ];
 
   # https://devenv.sh/scripts/

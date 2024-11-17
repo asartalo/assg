@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/asartalo/formathtml"
 	mset "github.com/deckarep/golang-set/v2"
 )
 
@@ -104,8 +106,6 @@ func (e *Engine) LoadTemplates(templateDir string) error {
 				return err
 			}
 
-			// tmpTemplate := e.assignTemplate(relPath)
-
 			contents, err := os.ReadFile(path)
 			if err != nil {
 				return err
@@ -158,12 +158,19 @@ func (e *Engine) LoadTemplates(templateDir string) error {
 }
 
 func (e *Engine) RenderTemplate(name string, result io.Writer, data interface{}) error {
+	b := bytes.NewBuffer([]byte{})
 	tmpl, ok := e.Templates[name]
 	if !ok {
 		return fmt.Errorf("template %s not found", name)
 	}
 
-	return tmpl.ExecuteTemplate(result, name, data)
+	err := tmpl.ExecuteTemplate(b, name, data)
+	if err != nil {
+		return err
+	}
+
+	// Format the HTML content
+	return formathtml.Document(result, b)
 }
 
 func (e *Engine) TemplateExists(name string) bool {

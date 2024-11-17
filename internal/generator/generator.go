@@ -606,11 +606,8 @@ func (g *Generator) renderPage(templateData interface{}, destinationDir string, 
 		destinationFile,
 		templateData,
 	)
-	if err != nil {
-		return err
-	}
 
-	return TidyHtml(destinationPath)
+	return err
 }
 
 func (g *Generator) GetTemplateToUse(page *content.WebPage) string {
