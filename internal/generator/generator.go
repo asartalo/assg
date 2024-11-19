@@ -81,6 +81,11 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 		verbose: verbose,
 	}
 
+	err := generator.ClearOutputDirectory()
+	if err != nil {
+		return nil, err
+	}
+
 	hierarchy, err := GatherContent(*cfg, verbose)
 	if err != nil {
 		return nil, err
@@ -110,6 +115,21 @@ func (g *Generator) Printf(format string, args ...interface{}) {
 	if g.verbose {
 		fmt.Printf(format, args...)
 	}
+}
+
+func (g *Generator) ClearOutputDirectory() error {
+	dir, err := os.ReadDir(g.Config.OutputDirectoryAbsolute())
+	if err != nil {
+		return err
+	}
+	for _, d := range dir {
+		err = os.RemoveAll(path.Join(g.Config.OutputDirectoryAbsolute(), d.Name()))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (g *Generator) Build(now time.Time) error {
