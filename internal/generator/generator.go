@@ -534,7 +534,7 @@ func (g *Generator) renderPage(templateData interface{}, destinationDir string, 
 	}
 
 	destinationPath := path.Join(destinationDir, "index.html")
-	destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		fmt.Printf("Error creating file")
 		return err
@@ -584,7 +584,7 @@ func copyFile(from, to string) error {
 	defer source.Close()
 
 	// open destinationPath for writing
-	destination, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	destination, err := os.OpenFile(to, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
