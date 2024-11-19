@@ -10,11 +10,13 @@
   {{ end }}
 </ul>
 
-<div class="pagination">
-  {{ if .Prev }}
-  <a href="{{ .Prev }}">{{ .PrevPage.Title }}</a>
-  {{ end }} {{ if .Next }}
-  <a href="{{ .Next }}">{{ .NextPage.Title }}</a>
-  {{ end }}
-</div>
-{{end}}
+{{ if or .Prev .Next }}
+  <div class="pagination">
+    {{ if .Prev }}
+      <a href="{{ .Prev }}">{{ .PrevPage.Title }}</a>
+    {{ end }} {{ if .Next }}
+    <a href="{{ .Next }}">{{ .NextPage.Title }}</a>
+    {{ end }}
+  </div>
+{{ end }}
+{{ end }}

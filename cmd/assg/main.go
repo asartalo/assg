@@ -35,7 +35,7 @@ var buildCmd = &cobra.Command{
 		}
 
 		outputDir := filepath.Join(srcDir, "public")
-		err = commands.Build(srcDir, outputDir, false, time.Now())
+		err = commands.Build(srcDir, outputDir, false, verbose, time.Now())
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -54,12 +54,14 @@ var serveCmd = &cobra.Command{
 }
 
 var includeDrafts bool
+var verbose bool
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(serveCmd)
 
 	// Add flags
+	buildCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose output")
 	serveCmd.Flags().BoolVar(&includeDrafts, "include-drafts", false, "Include draft pages when serving")
 }
 

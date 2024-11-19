@@ -2,6 +2,7 @@ package generator
 
 import (
 	"cmp"
+	"fmt"
 	"path/filepath"
 	"slices"
 
@@ -20,16 +21,31 @@ type ContentHierarchy struct {
 	Taxonomies    map[string]TermMap
 	TaxonomyPage  map[string]*content.WebPage
 	childrenCache map[string][]*content.WebPage
+	verbose       bool
 }
 
-func NewPageHierarchy() *ContentHierarchy {
+func NewPageHierarchy(verbose bool) *ContentHierarchy {
 	return &ContentHierarchy{
 		Pages:        make(map[string]*ContentNode),
 		TaxonomyPage: make(map[string]*content.WebPage),
+		verbose:      verbose,
+	}
+}
+
+func (ph *ContentHierarchy) Println(args ...interface{}) {
+	if ph.verbose {
+		fmt.Println(args...)
+	}
+}
+
+func (ph *ContentHierarchy) Printf(format string, args ...interface{}) {
+	if ph.verbose {
+		fmt.Printf(format, args...)
 	}
 }
 
 func (ph *ContentHierarchy) AddPage(page *content.WebPage) {
+	ph.Println("Adding page:", page.RenderedPath())
 	taxonomies := page.FrontMatter.Taxonomies
 	if ph.Taxonomies == nil {
 		ph.Taxonomies = make(map[string]TermMap)
@@ -48,6 +64,7 @@ func (ph *ContentHierarchy) AddPage(page *content.WebPage) {
 	}
 
 	if page.IsTaxonomy() {
+		ph.Printf("  It's a taxonomy page: %s\n", page.TaxonomyType())
 		ph.TaxonomyPage[page.TaxonomyType()] = page
 	}
 }
@@ -75,12 +92,18 @@ var comparePageByDate = func(a, b *content.WebPage) int {
 }
 
 func (ph *ContentHierarchy) Retree() {
+	ph.Println("Recalculating hierarchies...")
+
 	for path, node := range ph.Pages {
+		ph.Println("  Checking:", path)
 		possibleParent := filepath.Dir(path)
 		parent := ""
 		_, ok := ph.Pages[possibleParent]
 		if ok {
+			ph.Println("  Parent found:", possibleParent)
 			parent = possibleParent
+		} else {
+			ph.Println("  Not a child")
 		}
 
 		node.Parent = parent

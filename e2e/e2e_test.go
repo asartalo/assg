@@ -55,7 +55,7 @@ func (suite *E2ETestSuite) RunBuildTest(fixture string) {
 	now, err := time.Parse(time.RFC3339, "2024-03-01T10:00:00Z")
 	suite.NoError(err)
 
-	err = commands.Build(siteDir, publicDir, false, now)
+	err = commands.Build(siteDir, publicDir, false, false, now)
 	suite.NoError(err)
 
 	assertDirContents(suite.T(), expectedDir, publicDir)

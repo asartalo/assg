@@ -15,7 +15,7 @@ type TemplateContent struct {
 	Content template.HTML
 }
 
-func Build(srcDir, outputDir string, includeDrafts bool, now time.Time) error {
+func Build(srcDir, outputDir string, includeDrafts bool, verbose bool, now time.Time) error {
 	config, err := config.Load(path.Join(srcDir, "config.toml"))
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func Build(srcDir, outputDir string, includeDrafts bool, now time.Time) error {
 		config.OutputDirectory = outputDir
 	}
 	config.IncludeDrafts = includeDrafts
-	gen, err := generator.New(config)
+	gen, err := generator.New(config, verbose)
 
 	if err != nil {
 		return err

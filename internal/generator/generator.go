@@ -30,6 +30,7 @@ type Generator struct {
 	hierarchy     *ContentHierarchy
 	feedAuthor    *FeedAuthor
 	taxonomyCache map[string]TermTTC
+	verbose       bool
 }
 
 func defineFuncs(generator *Generator) htmltpl.FuncMap {
@@ -72,14 +73,15 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 	return funcMap
 }
 
-func New(cfg *config.Config) (*Generator, error) {
+func New(cfg *config.Config, verbose bool) (*Generator, error) {
 	srcDir := cfg.RootDirectory()
 
 	generator := &Generator{
-		Config: cfg,
+		Config:  cfg,
+		verbose: verbose,
 	}
 
-	hierarchy, err := GatherContent(*cfg)
+	hierarchy, err := GatherContent(*cfg, verbose)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +100,20 @@ func New(cfg *config.Config) (*Generator, error) {
 	return generator, err
 }
 
+func (g *Generator) Println(args ...interface{}) {
+	if g.verbose {
+		fmt.Println(args...)
+	}
+}
+
+func (g *Generator) Printf(format string, args ...interface{}) {
+	if g.verbose {
+		fmt.Printf(format, args...)
+	}
+}
+
 func (g *Generator) Build(now time.Time) error {
+	g.Println("\nBuilding site...")
 	for _, node := range g.hierarchy.Pages {
 		err := g.GeneratePage(node.Page)
 		if err != nil {
@@ -215,90 +230,6 @@ func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
 	return item, nil
 }
 
-func GatherContent(config config.Config) (*ContentHierarchy, error) {
-	harvester := &harvester{
-		outputDir:  config.OutputDirectoryAbsolute(),
-		contentDir: config.ContentDirectoryAbsolute(),
-		hierarchy:  NewPageHierarchy(),
-	}
-
-	return harvester.harvest()
-}
-
-type harvester struct {
-	outputDir  string
-	contentDir string
-	hierarchy  *ContentHierarchy
-}
-
-func (harvester *harvester) harvest() (*ContentHierarchy, error) {
-	hierarchy := harvester.hierarchy
-
-	err := filepath.WalkDir(harvester.contentDir, func(contentPath string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			// skip if basename has a dot prefix
-			if filepath.Base(contentPath)[0] == '.' {
-				return filepath.SkipDir
-			}
-		} else {
-			relPath, err := filepath.Rel(harvester.contentDir, contentPath)
-			if err != nil {
-				return err
-			}
-
-			if isMarkdown(info) {
-				return harvester.handleMarkdownFile(contentPath, relPath)
-			} else {
-				return harvester.copyFiles(contentPath, relPath)
-			}
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	hierarchy.Retree()
-
-	return hierarchy, err
-}
-
-func (harvester *harvester) handleMarkdownFile(dPath string, relPath string) error {
-	fileContent, err := os.ReadFile(dPath)
-	if err != nil {
-		return err
-	}
-
-	page, err := content.ParsePage(relPath, fileContent)
-	if err != nil {
-		return err
-	}
-
-	harvester.hierarchy.AddPage(page)
-
-	return nil
-}
-
-func (harvester *harvester) copyFiles(dPath string, relPath string) error {
-	destinationPath := path.Join(harvester.outputDir, relPath)
-	err := os.MkdirAll(filepath.Dir(destinationPath), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = copyFile(dPath, destinationPath)
-	if err != nil {
-		return err
-	}
-	return err
-}
-
 const DEFAULT_TEMPLATE = "default.html"
 
 func (g *Generator) OutputPath(endPath string) string {
@@ -306,6 +237,7 @@ func (g *Generator) OutputPath(endPath string) string {
 }
 
 func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
+	g.Printf("Generating page: %s\n", page.MarkdownPath)
 	if page == nil {
 		return fmt.Errorf("page is nil")
 	}
@@ -325,8 +257,12 @@ func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
 		)
 	}
 
+	g.Printf("  Using template: %s\n", templateToUse)
+
 	destinationDir := g.OutputPath(page.RenderedPath())
 	templateData := g.PageToTemplateContent(page)
+	g.Printf("  Destination: %s\n", destinationDir)
+
 	if page.IsTaxonomy() {
 		err = g.generateTaxonomyPages(
 			page,
@@ -345,12 +281,14 @@ func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
 	} else {
 		parentPage := g.hierarchy.GetParent(*page)
 		if parentPage != nil {
+			g.Printf("  Parent page: %s\n", parentPage.MarkdownPath)
 			err = g.renderPage(
 				g.generateChildPageData(page, parentPage, templateData),
 				destinationDir,
 				templateToUse,
 			)
 		} else {
+			g.Printf("  Not a child page\n")
 			err = g.renderPage(templateData, destinationDir, templateToUse)
 		}
 	}
@@ -446,6 +384,7 @@ func (g *Generator) generateTaxonomyPages(
 	destinationDir string,
 	templateToUse string,
 ) (err error) {
+	g.Printf("  Generating taxonomy pages for: %s\n", page.MarkdownPath)
 	taxonomy := page.TaxonomyType()
 	termMapping := g.hierarchy.GetTaxonomyTerms(taxonomy)
 	paginateBy := page.FrontMatter.Index.PaginateBy
@@ -503,6 +442,7 @@ func (g *Generator) generateIndexPages(
 	templateToUse string,
 	pagingGroups [][]TemplateContent,
 ) (err error) {
+	g.Printf("  Generating index pages for: %s\n", page.MarkdownPath)
 	pagingCount := len(pagingGroups)
 
 	// render redirect page
