@@ -4,7 +4,7 @@ date = "2024-02-02T14:30:00Z"
 description = "The sequel to Day 1"
 
 [taxonomies]
-tags = ["life", "discoveries"]
+tags = ["life", "good finds"]
 +++
 
 Today I discovered a hidden coffee shop downtown with the most amazing latte art.

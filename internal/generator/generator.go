@@ -392,7 +392,9 @@ func (g *Generator) ensurePopulatedTaxonomyCache(taxonomy string) TermTTC {
 
 	for term, pages := range mapTerms {
 		if _, ok := ttcCache[term]; !ok {
-			rootPath := content.RootPath(filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), term)))
+			rootPath := content.RootPath(
+				filepath.ToSlash(path.Join(taxonomyIndexPage.RenderedPath(), dashSpaces(term))),
+			)
 			ttc := &TaxonomyTermContent{
 				Term:      term,
 				PageCount: len(pages),
@@ -461,7 +463,7 @@ func (g *Generator) generateTaxonomyPages(
 	pluralizer := pluralize.NewClient()
 	taxonomySingular := pluralizer.Singular(titleCaser(taxonomy))
 	for term, pages := range termMapping {
-		termDir := path.Join(pagePath, term)
+		termDir := path.Join(pagePath, dashSpaces(term))
 		taxIndexFields := page.FrontMatter.Index
 		iPageFrontMatter := content.FrontMatter{
 			Title: titleCaser(term),
