@@ -31,6 +31,7 @@ type Generator struct {
 	feedAuthor    *FeedAuthor
 	taxonomyCache map[string]TermTTC
 	verbose       bool
+	renderedPaths []string
 }
 
 func defineFuncs(generator *Generator) htmltpl.FuncMap {
@@ -143,6 +144,13 @@ func (g *Generator) Build(now time.Time) error {
 
 	g.GenerateFeed(now)
 
+	if g.Config.Sitemap {
+		err := g.GenerateSitemap()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -204,13 +212,45 @@ func (g *Generator) GenerateFeed(now time.Time) error {
 		return err
 	}
 
+	defer atomFile.Close()
+
 	err = feed.WriteXML(atomFile)
 	if err != nil {
 		return err
 	}
 
-	atomFile.Close()
-	return TidyXml(atomFilePath)
+	return err
+}
+
+var compareAlpha = func(a, b string) int {
+	return cmp.Compare(a, b)
+}
+
+func (g *Generator) GenerateSitemap() error {
+	sitemap := Sitemap{
+		Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9",
+		Urls:  make([]*SitemapUrl, 0),
+	}
+
+	// Gather URLs
+	slices.SortStableFunc(g.renderedPaths, compareAlpha)
+	for _, path := range g.renderedPaths {
+		sitemap.Urls = append(sitemap.Urls, &SitemapUrl{
+			Loc: g.FullUrl(path),
+		})
+	}
+
+	sitemapFilePath := g.OutputPath("sitemap.xml")
+
+	sitemapFile, err := os.OpenFile(sitemapFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer sitemapFile.Close()
+
+	err = sitemap.WriteXML(sitemapFile)
+
+	return err
 }
 
 func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
@@ -279,22 +319,22 @@ func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
 
 	g.Printf("  Using template: %s\n", templateToUse)
 
-	destinationDir := g.OutputPath(page.RenderedPath())
+	pagePath := page.RenderedPath()
 	templateData := g.PageToTemplateContent(page)
-	g.Printf("  Destination: %s\n", destinationDir)
+	g.Printf("  Destination: %s\n", pagePath)
 
 	if page.IsTaxonomy() {
 		err = g.generateTaxonomyPages(
 			page,
 			templateData,
-			destinationDir,
+			pagePath,
 			templateToUse,
 		)
 	} else if page.IsIndex() {
 		err = g.generateIndexPages(
 			page,
 			templateData,
-			destinationDir,
+			pagePath,
 			templateToUse,
 			g.PagesToTemplateContents(page),
 		)
@@ -304,12 +344,13 @@ func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
 			g.Printf("  Parent page: %s\n", parentPage.MarkdownPath)
 			err = g.renderPage(
 				g.generateChildPageData(page, parentPage, templateData),
-				destinationDir,
+				pagePath,
 				templateToUse,
+				true,
 			)
 		} else {
 			g.Printf("  Not a child page\n")
-			err = g.renderPage(templateData, destinationDir, templateToUse)
+			err = g.renderPage(templateData, pagePath, templateToUse, true)
 		}
 	}
 
@@ -401,7 +442,7 @@ func (g *Generator) GetTaxonomyTermsForPage(rootPath string, taxonomy string) (t
 func (g *Generator) generateTaxonomyPages(
 	page *content.WebPage,
 	templateData TemplateContent,
-	destinationDir string,
+	pagePath string,
 	templateToUse string,
 ) (err error) {
 	g.Printf("  Generating taxonomy pages for: %s\n", page.MarkdownPath)
@@ -409,7 +450,7 @@ func (g *Generator) generateTaxonomyPages(
 	termMapping := g.hierarchy.GetTaxonomyTerms(taxonomy)
 	paginateBy := page.FrontMatter.Index.PaginateBy
 
-	err = g.renderPage(templateData, destinationDir, templateToUse)
+	err = g.renderPage(templateData, pagePath, templateToUse, true)
 	if err != nil {
 		return err
 	}
@@ -420,7 +461,7 @@ func (g *Generator) generateTaxonomyPages(
 	pluralizer := pluralize.NewClient()
 	taxonomySingular := pluralizer.Singular(titleCaser(taxonomy))
 	for term, pages := range termMapping {
-		termDir := path.Join(destinationDir, term)
+		termDir := path.Join(pagePath, term)
 		taxIndexFields := page.FrontMatter.Index
 		iPageFrontMatter := content.FrontMatter{
 			Title: titleCaser(term),
@@ -434,9 +475,12 @@ func (g *Generator) generateTaxonomyPages(
 			Template: page.FrontMatter.Index.PageTemplate,
 		}
 		termPage := content.WebPage{
-			FrontMatter:  iPageFrontMatter,
-			Content:      *new(bytes.Buffer),
-			MarkdownPath: path.Join(page.RenderedPath(), fmt.Sprintf("%s.md", term)),
+			FrontMatter: iPageFrontMatter,
+			Content:     *new(bytes.Buffer),
+			MarkdownPath: path.Join(
+				page.RenderedPath(),
+				fmt.Sprintf("%s.md", dashSpaces(term)),
+			),
 		}
 
 		err = g.generateIndexPages(
@@ -458,7 +502,7 @@ func (g *Generator) generateTaxonomyPages(
 func (g *Generator) generateIndexPages(
 	page *content.WebPage,
 	templateData TemplateContent,
-	destinationDir string,
+	pagePath string,
 	templateToUse string,
 	pagingGroups [][]TemplateContent,
 ) (err error) {
@@ -467,21 +511,21 @@ func (g *Generator) generateIndexPages(
 
 	// render redirect page
 	if pagingCount > 1 {
-		page1Dir := path.Join(destinationDir, "page", "1")
+		page1Path := path.Join(pagePath, "page", "1")
 		redirectPath := g.FullUrl(page.RootPath())
 
-		err = g.renderPage(redirectPath, page1Dir, "_redirect")
+		err = g.renderPage(redirectPath, page1Path, "_redirect", false)
 		if err != nil {
 			return err
 		}
 	}
 
 	for i, group := range pagingGroups {
-		var destinDir string
+		var destinPath string
 		if i == 0 {
-			destinDir = destinationDir
+			destinPath = pagePath
 		} else {
-			destinDir = path.Join(destinationDir, "page", strconv.Itoa(i+1))
+			destinPath = path.Join(pagePath, "page", strconv.Itoa(i+1))
 		}
 
 		prev := ""
@@ -510,7 +554,7 @@ func (g *Generator) generateIndexPages(
 			TotalPages:      pagingCount,
 		}
 
-		err = g.renderPage(indexTemplateData, destinDir, templateToUse)
+		err = g.renderPage(indexTemplateData, destinPath, templateToUse, true)
 	}
 
 	return
@@ -547,16 +591,34 @@ func (g *Generator) generateChildPageData(
 	}
 }
 
-func (g *Generator) renderPage(templateData interface{}, destinationDir string, templateToUse string) error {
+func (g *Generator) pathValue(templateData interface{}) string {
+	switch v := templateData.(type) {
+	case string:
+		return v
+	case TemplateContent:
+		return v.Path
+	default:
+		return ""
+	}
+}
+
+func (g *Generator) renderPage(
+	templateData interface{},
+	pagePath string,
+	templateToUse string,
+	canonical bool,
+) error {
+	destinationDir := g.OutputPath(pagePath)
 	err := os.MkdirAll(destinationDir, 0755)
 	if err != nil {
 		return err
 	}
 
+	g.Printf("  Rendering page: %s\n", g.pathValue(templateData))
 	destinationPath := path.Join(destinationDir, "index.html")
 	destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		fmt.Printf("Error creating file")
+		g.Printf("Error creating file")
 		return err
 	}
 	defer destinationFile.Close()
@@ -566,6 +628,10 @@ func (g *Generator) renderPage(templateData interface{}, destinationDir string, 
 		destinationFile,
 		templateData,
 	)
+
+	if err == nil && canonical {
+		g.renderedPaths = append(g.renderedPaths, content.RootPath(pagePath))
+	}
 
 	return err
 }
@@ -649,6 +715,10 @@ func slashPath(path string) string {
 	}
 
 	return tmp
+}
+
+func dashSpaces(str string) string {
+	return strings.ReplaceAll(str, " ", "-")
 }
 
 func isMarkdown(info fs.DirEntry) bool {

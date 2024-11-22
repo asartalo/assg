@@ -4,6 +4,7 @@ description = "A test blog for ASSG"
 generate_feed = true
 feed_limit = 10
 author = "Jane Doe"
+sitemap = true
 
 [markdown]
 highlight_code = true
