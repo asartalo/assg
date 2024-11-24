@@ -17,6 +17,8 @@ github.com/asartalo/formathtml v0.1.0 h1:bmvJj4K8wDEphk8HVgK4u3ZQ1rvB78LIgCzsTMK
 github.com/asartalo/formathtml v0.1.0/go.mod h1:UeoOIiFS/6SZOuSXqsR3RxboqphC2czS4cNKVJ7S8+s=
 github.com/asartalo/formathtml v0.1.1 h1:IV/v7ZEcfwRMA5RhIzWgPWoS10fTMIgZOCrDDFHF3AA=
 github.com/asartalo/formathtml v0.1.1/go.mod h1:UeoOIiFS/6SZOuSXqsR3RxboqphC2czS4cNKVJ7S8+s=
+github.com/bep/debounce v1.2.1 h1:v67fRdBA9UQu2NhLFXrSg0Brw7CexQekrBwDMM8bzeY=
+github.com/bep/debounce v1.2.1/go.mod h1:H8yggRPQKLUhUoqrJC1bO2xNya7vanpDl7xR3ISbCJ0=
 github.com/cpuguy83/go-md2man/v2 v2.0.4/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
