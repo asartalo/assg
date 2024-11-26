@@ -21,6 +21,7 @@ type Config struct {
 	OutputDirectory  string           `toml:"output_directory"`
 	IncludeDrafts    bool             `toml:"include_drafts"`
 	Sitemap          bool             `toml:"sitemap"`
+	DevMode          bool
 	rootDirectory    string
 }
 

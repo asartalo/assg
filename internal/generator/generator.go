@@ -71,6 +71,16 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 		))
 	}
 
+	funcMap["devScripts"] = func() htmltpl.HTML {
+		if generator.Config.DevMode {
+			return htmltpl.HTML(`
+				<script src="http://localhost:35729/livereload.js"></script>
+			`)
+		}
+
+		return htmltpl.HTML("")
+	}
+
 	return funcMap
 }
 

@@ -149,6 +149,7 @@ func Serve(srcDir string, includeDrafts bool) error {
 		return err
 	}
 
+	config.DevMode = true
 	config.OutputDirectory = serveDirectory
 	config.IncludeDrafts = includeDrafts
 	config.BaseURL = fmt.Sprintf("http://localhost:%s", port)
