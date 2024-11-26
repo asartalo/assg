@@ -15,16 +15,23 @@ import (
 	"github.com/asartalo/assg/internal/generator"
 	"github.com/bep/debounce"
 	"github.com/fsnotify/fsnotify"
+	"github.com/jaschaephraim/lrserver"
 )
 
 type RecursiveWatcher struct {
 	watcher    *fsnotify.Watcher
-	callback   func()
+	callback   func(name string)
 	directory  string
 	ignoreList map[string]bool
 }
 
-func NewRecursiveWatcher(directory string, ignore []string, callback func()) (*RecursiveWatcher, error) {
+var commonIgnoreList = []string{
+	".git",
+	".sass-cache",
+	"node_modules",
+}
+
+func NewRecursiveWatcher(directory string, ignore []string, callback func(name string)) (*RecursiveWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -35,6 +42,10 @@ func NewRecursiveWatcher(directory string, ignore []string, callback func()) (*R
 		callback:   callback,
 		directory:  directory,
 		ignoreList: make(map[string]bool),
+	}
+
+	for _, toIgnore := range commonIgnoreList {
+		rWatcher.ignoreList[toIgnore] = true
 	}
 
 	for _, toIgnore := range ignore {
@@ -75,8 +86,10 @@ func (r *RecursiveWatcher) watchDirectory(directory string) {
 func (r *RecursiveWatcher) start() {
 	go func() {
 		debouncer := debounce.New(100 * time.Millisecond)
-		debouncedCallback := func() {
-			debouncer(r.callback)
+		debouncedCallback := func(eventName string) {
+			debouncer(func() {
+				r.callback(eventName)
+			})
 		}
 
 		for {
@@ -91,9 +104,9 @@ func (r *RecursiveWatcher) start() {
 
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					r.watcher.Remove(event.Name)
-					debouncedCallback()
+					debouncedCallback(event.Name)
 				} else if event.Op&fsnotify.Write == fsnotify.Write {
-					debouncedCallback()
+					debouncedCallback(event.Name)
 				}
 
 			case err := <-r.watcher.Errors:
@@ -140,10 +153,18 @@ func Serve(srcDir string, includeDrafts bool) error {
 	config.IncludeDrafts = includeDrafts
 	config.BaseURL = fmt.Sprintf("http://localhost:%s", port)
 
-	buildIt := func() {
+	lr := lrserver.New(lrserver.DefaultName, lrserver.DefaultPort)
+	go lr.ListenAndServe()
+
+	var serverStarted bool
+	buildIt := func(eventName string) {
 		err := buildForServer(config, time.Now())
 		if err != nil {
 			log.Println(err)
+		} else {
+			if serverStarted && eventName != "" {
+				lr.Reload(eventName)
+			}
 		}
 	}
 
@@ -154,19 +175,24 @@ func Serve(srcDir string, includeDrafts bool) error {
 	}
 	defer watcher.Close()
 
+	fileServer := http.FileServer(http.Dir(serveDirectory))
+	mux := http.NewServeMux()
+	mux.Handle("/", fileServer)
+
 	srv := &http.Server{
 		Addr:    ":" + port,
-		Handler: http.FileServer(http.Dir(serveDirectory)),
+		Handler: mux,
 	}
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	// Build the site for the first time
-	buildIt()
+	buildIt("")
 
 	go func() {
 		log.Printf("Serving %s on HTTP port: %s\n", serveDirectory, port)
+		serverStarted = true
 		err = srv.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			log.Println(err)
