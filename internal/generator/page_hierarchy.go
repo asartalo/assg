@@ -21,6 +21,7 @@ type ContentHierarchy struct {
 	Taxonomies    map[string]TermMap
 	TaxonomyPage  map[string]*content.WebPage
 	childrenCache map[string][]*content.WebPage
+	StaticFiles   map[string]string
 	verbose       bool
 }
 
@@ -28,6 +29,7 @@ func NewPageHierarchy(verbose bool) *ContentHierarchy {
 	return &ContentHierarchy{
 		Pages:        make(map[string]*ContentNode),
 		TaxonomyPage: make(map[string]*content.WebPage),
+		StaticFiles:  make(map[string]string),
 		verbose:      verbose,
 	}
 }
@@ -67,6 +69,11 @@ func (ph *ContentHierarchy) AddPage(page *content.WebPage) {
 		ph.Printf("  It's a taxonomy page: %s\n", page.TaxonomyType())
 		ph.TaxonomyPage[page.TaxonomyType()] = page
 	}
+}
+
+func (ph *ContentHierarchy) AddStaticFile(relPath, fullPath string) {
+	ph.Println("Adding static file:", relPath)
+	ph.StaticFiles[relPath] = fullPath
 }
 
 func (ph *ContentHierarchy) SortedPages() []*content.WebPage {

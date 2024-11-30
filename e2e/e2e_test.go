@@ -37,6 +37,10 @@ func (suite *E2ETestSuite) TestExtraData() {
 	suite.RunBuildTest("extra-data")
 }
 
+func (suite *E2ETestSuite) TestPreAndPostBuild() {
+	suite.RunBuildTest("pre-and-post-build")
+}
+
 func (suite *E2ETestSuite) SetupSuite() {
 	// current working directory
 	cwd, err := os.Getwd()

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/asartalo/assg/internal/config"
@@ -52,8 +51,8 @@ func (harvester *harvester) harvest() (*ContentHierarchy, error) {
 				harvester.Println("Processing markdown file:", relPath)
 				return harvester.handleMarkdownFile(contentPath, relPath)
 			} else {
-				harvester.Println("Copying file:", relPath)
-				return harvester.copyFiles(contentPath, relPath)
+				hierarchy.AddStaticFile(relPath, contentPath)
+				return nil
 			}
 		}
 
@@ -95,18 +94,4 @@ func (harvester *harvester) handleMarkdownFile(dPath string, relPath string) err
 	harvester.hierarchy.AddPage(page)
 
 	return nil
-}
-
-func (harvester *harvester) copyFiles(dPath string, relPath string) error {
-	destinationPath := path.Join(harvester.outputDir, relPath)
-	err := os.MkdirAll(filepath.Dir(destinationPath), 0755)
-	if err != nil {
-		return err
-	}
-
-	err = copyFile(dPath, destinationPath)
-	if err != nil {
-		return err
-	}
-	return err
 }

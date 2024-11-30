@@ -7,6 +7,7 @@ import (
 	htmltpl "html/template"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"slices"
@@ -143,13 +144,55 @@ func (g *Generator) ClearOutputDirectory() error {
 	return nil
 }
 
+func (g *Generator) shouldRunPreBuild() bool {
+	return g.Config.PreBuildCmd != "" && !g.Config.DevMode
+}
+
+func (g *Generator) runPreBuild() error {
+	g.Println("Running pre-build command...")
+	return g.runBuildCommand(g.Config.PreBuildCmd)
+}
+
+func commandAndArgs(cmd string) (string, []string) {
+	parts := strings.Split(cmd, " ")
+	return parts[0], parts[1:]
+}
+
+func (g *Generator) runBuildCommand(cmd string) error {
+	command, args := commandAndArgs(cmd)
+	cm := exec.Command(command, args...)
+	cm.Env = os.Environ()
+	cm.Dir = g.Config.RootDirectory()
+	g.Printf("Running command: %s %v\n", command, args)
+	cm.Env = append(cm.Env, fmt.Sprintf("ASSG_ROOT=%s", g.Config.RootDirectory()))
+	cm.Env = append(cm.Env, fmt.Sprintf("ASSG_CONTENT=%s", g.Config.ContentDirectoryAbsolute()))
+	cm.Env = append(cm.Env, fmt.Sprintf("ASSG_OUTPUT=%s", g.Config.OutputDirectoryAbsolute()))
+	cm.Stdout = os.Stdout
+	cm.Stderr = os.Stderr
+
+	return cm.Run()
+}
+
 func (g *Generator) Build(now time.Time) error {
+	if g.shouldRunPreBuild() {
+		err := g.runPreBuild()
+		if err != nil {
+			return err
+		}
+	}
+
 	g.Println("\nBuilding site...")
 	for _, node := range g.hierarchy.Pages {
 		err := g.GeneratePage(node.Page)
 		if err != nil {
 			return err
 		}
+	}
+
+	g.Println("\nCopying static files...")
+	err := g.CopyStaticFiles()
+	if err != nil {
+		return err
 	}
 
 	g.GenerateFeed(now)
@@ -161,7 +204,40 @@ func (g *Generator) Build(now time.Time) error {
 		}
 	}
 
+	if g.shouldRunPostBuild() {
+		err := g.runPostBuild()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (g *Generator) CopyStaticFiles() error {
+	for relPath, fullPath := range g.hierarchy.StaticFiles {
+		destinationPath := g.OutputPath(relPath)
+		err := os.MkdirAll(filepath.Dir(destinationPath), 0755)
+		if err != nil {
+			return err
+		}
+
+		err = copyFile(fullPath, destinationPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g *Generator) shouldRunPostBuild() bool {
+	return g.Config.PostBuildCmd != "" && !g.Config.DevMode
+}
+
+func (g *Generator) runPostBuild() error {
+	g.Println("Running post-build command...")
+	return g.runBuildCommand(g.Config.PostBuildCmd)
 }
 
 func (g *Generator) defaultFeedAuthor() *FeedAuthor {

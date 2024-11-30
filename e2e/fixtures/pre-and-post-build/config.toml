@@ -1,0 +1,10 @@
+base_url = "http://example.com/"
+title = "Pre and Post Build Commands"
+description = "A test site for ASSG"
+prebuild = "sh pre.sh"
+postbuild = "sh post.sh"
+
+[markdown]
+highlight_code = true
+smart_punctuation = true
+
