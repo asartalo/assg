@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/asartalo/assg/internal/config"
@@ -28,9 +29,10 @@ func buildForServer(config *config.Config, now time.Time) error {
 }
 
 type Server struct {
-	Config *config.Config
-	SrcDir string
-	done   chan bool
+	Config  *config.Config
+	SrcDir  string
+	done    chan bool
+	startMu sync.Mutex
 }
 
 func NewServer(srcDir string, includeDrafts bool) (*Server, error) {
@@ -46,7 +48,7 @@ func NewServer(srcDir string, includeDrafts bool) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(ready chan bool) error {
 	port := "8080"
 	srcDir := s.SrcDir
 	includeDrafts := s.Config.IncludeDrafts
@@ -61,12 +63,17 @@ func (s *Server) Start() error {
 	lr := lrserver.New(lrserver.DefaultName, lrserver.DefaultPort)
 	go lr.ListenAndServe()
 
-	var serverStarted bool
+	s.startMu.Lock()
+	serverStarted := false
+	s.startMu.Unlock()
+
 	buildIt := func(eventName string) {
 		err := buildForServer(config, time.Now())
 		if err != nil {
 			log.Println(err)
 		} else {
+			s.startMu.Lock()
+			defer s.startMu.Unlock()
 			if serverStarted && eventName != "" {
 				lr.Reload(eventName)
 			}
@@ -90,10 +97,14 @@ func (s *Server) Start() error {
 	}
 
 	buildIt("")
+	log.Println("Initial build done")
+	ready <- true
 
 	go func() {
 		log.Printf("Serving %s on HTTP port: %s\n", serveDirectory, port)
+		s.startMu.Lock()
 		serverStarted = true
+		s.startMu.Unlock()
 		err = srv.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
 			log.Println(err)

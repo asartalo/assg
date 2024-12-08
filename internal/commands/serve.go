@@ -9,8 +9,10 @@ import (
 )
 
 func Serve(srcDir string, includeDrafts bool) error {
-	serverSignal := make(chan os.Signal, 1)
-	signal.Notify(serverSignal, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	ready := make(chan bool)
+	stopSignal := make(chan os.Signal, 1)
+	errorChannel := make(chan error)
+	signal.Notify(stopSignal, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	srv, err := server.NewServer(srcDir, includeDrafts)
 	if err != nil {
@@ -18,9 +20,17 @@ func Serve(srcDir string, includeDrafts bool) error {
 	}
 
 	go func() {
-		<-serverSignal
+		<-ready
+		<-stopSignal
 		srv.Stop()
 	}()
 
-	return srv.Start()
+	go func() {
+		err := srv.Start(ready)
+		errorChannel <- err
+	}()
+
+	<-errorChannel
+
+	return nil
 }

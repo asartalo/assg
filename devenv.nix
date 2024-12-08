@@ -2,7 +2,9 @@
 
 {
   # https://devenv.sh/basics/
-  env.GREET = "ASSG - Asartalo’s Static Site Generator";
+  env = {
+    GREET = "ASSG - Asartalo’s Static Site Generator";
+  };
 
   # https://devenv.sh/packages/
   packages = with pkgs; [
