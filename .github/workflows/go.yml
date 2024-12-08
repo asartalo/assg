@@ -23,8 +23,11 @@ jobs:
 
     - name: Testing Write
       run: |
-        ls -l > test.txt
-        cat test.txt
+        cd e2e/fixtures/pre-and-post-build/
+        which sh
+        echo "-- trying bash --"
+        bash ./pre.sh
+        ls -la ./content
 
     - name: Test
       run: go test -v ./...
