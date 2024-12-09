@@ -21,12 +21,12 @@ jobs:
       with:
         go-version: '1.23'
 
-    - name: Testing Write
-      run: |
-        cd e2e/fixtures/pre-and-post-build/
-        echo "-- trying sh --"
-        sh ./pre.sh
-        ls -la ./content
+    # - name: Testing Write
+    #   run: |
+    #     cd e2e/fixtures/pre-and-post-build/
+    #     echo "-- trying sh --"
+    #     sh ./pre.sh
+    #     ls -la ./content
 
     - name: Test
       run: go test -v ./...

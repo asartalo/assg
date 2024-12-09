@@ -1,3 +1,4 @@
+cd $ASSG_ROOT
 if [ -f ./content/pre.txt ]; then
     rm ./content/pre.txt
 fi
