@@ -24,9 +24,8 @@ jobs:
     - name: Testing Write
       run: |
         cd e2e/fixtures/pre-and-post-build/
-        which sh
-        echo "-- trying bash --"
-        bash ./pre.sh
+        echo "-- trying sh --"
+        sh ./pre.sh
         ls -la ./content
 
     - name: Test
