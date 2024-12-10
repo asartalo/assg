@@ -1,4 +1,6 @@
 cd $ASSG_ROOT
+echo "HELLO FROM pre.sh"
+echo "ASSG_ROOT: $ASSG_ROOT"
 if [ -f ./content/pre.txt ]; then
     rm ./content/pre.txt
 fi

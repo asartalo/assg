@@ -21,21 +21,34 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func assertDirContents(t *testing.T, expectedDir string, actualDir string) {
-	filesInExpectedDir := goset.NewSet[string]()
-	filesInActualDir := goset.NewSet[string]()
-	directoriesInExpectedDir := goset.NewSet[string]()
-	directoriesInActualDir := goset.NewSet[string]()
+func gatherFilesAndDirectoriesInDir(dir string) (files *goset.Set[string], directories *goset.Set[string], err error) {
+	files = goset.NewSet[string]()
+	directories = goset.NewSet[string]()
 
-	err := filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if d.IsDir() {
-			directoriesInExpectedDir.Add(path)
+			directories.Add(path)
 		} else {
-			filesInExpectedDir.Add(path)
+			files.Add(path)
+		}
+
+		return nil
+	})
+
+	return
+}
+
+func compareExpectedDirContentsToActual(t *testing.T, expectedDir, actualDir string) error {
+	return filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !d.IsDir() {
 			relPath, err := filepath.Rel(expectedDir, path) // Get path relative to expectedDir
 			if err != nil {
 				return err
@@ -77,23 +90,16 @@ func assertDirContents(t *testing.T, expectedDir string, actualDir string) {
 
 		return nil
 	})
+}
 
-	assert.NoError(t, err, "Error walking through expected directory")
+func assertDirContents(t *testing.T, expectedDir, actualDir string) {
+	filesInExpectedDir, directoriesInExpectedDir, err := gatherFilesAndDirectoriesInDir(expectedDir)
+	assert.NoError(t, err, "Error comparinng expected directory with actual")
 
-	err = filepath.WalkDir(actualDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
+	err = compareExpectedDirContentsToActual(t, expectedDir, actualDir)
+	assert.NoError(t, err, "Error tallying expected directory")
 
-		if d.IsDir() {
-			directoriesInActualDir.Add(path)
-		} else {
-			filesInActualDir.Add(path)
-		}
-
-		return nil
-	})
-
+	filesInActualDir, directoriesInActualDir, err := gatherFilesAndDirectoriesInDir(actualDir)
 	assert.NoError(t, err, "Error tallying output directory")
 
 	if directoriesInActualDir.Len() > directoriesInExpectedDir.Len() {

@@ -1,13 +1,16 @@
 package e2e
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"testing"
 	"time"
 
 	"github.com/asartalo/assg/internal/commands"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -38,7 +41,10 @@ func (suite *E2ETestSuite) TestExtraData() {
 }
 
 func (suite *E2ETestSuite) TestPreAndPostBuild() {
-	suite.RunBuildTest("pre-and-post-build")
+	output := captureOutput(func() {
+		suite.RunBuildTest("pre-and-post-build")
+	})
+	assert.Contains(suite.T(), output, "HELLO FROM PRE-BUILD")
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
@@ -46,6 +52,14 @@ func (suite *E2ETestSuite) SetupSuite() {
 	cwd, err := os.Getwd()
 	suite.NoError(err, "Unable to get working directory")
 	suite.FixtureDirectory = path.Join(cwd, "fixtures")
+}
+
+func captureOutput(f func()) string {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	f()
+	log.SetOutput(os.Stderr)
+	return buf.String()
 }
 
 func (suite *E2ETestSuite) RunBuildTest(fixture string) {
