@@ -222,6 +222,7 @@ func (g *Generator) CopyStaticFiles() error {
 			return err
 		}
 
+		g.Printf("  Copying %s to %s\n", fullPath, destinationPath)
 		err = copyFile(fullPath, destinationPath)
 		if err != nil {
 			return err

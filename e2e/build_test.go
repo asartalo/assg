@@ -20,29 +20,29 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) TestBasicSite() {
-	suite.RunBuildTest("basic")
+	suite.RunBuildTest("basic", false)
 }
 
 func (suite *E2ETestSuite) TestSiteHomeOnly() {
-	suite.RunBuildTest("site-home-only")
+	suite.RunBuildTest("site-home-only", false)
 }
 
 func (suite *E2ETestSuite) TestStaticFiles() {
 	// Static files are just copied over to the public directory
-	suite.RunBuildTest("static-files")
+	suite.RunBuildTest("static-files", false)
 }
 
 func (suite *E2ETestSuite) TestBlogExample() {
-	suite.RunBuildTest("blog-posts")
+	suite.RunBuildTest("blog-posts", false)
 }
 
 func (suite *E2ETestSuite) TestExtraData() {
-	suite.RunBuildTest("extra-data")
+	suite.RunBuildTest("extra-data", false)
 }
 
 func (suite *E2ETestSuite) TestPreAndPostBuild() {
 	output := captureOutput(func() {
-		suite.RunBuildTest("pre-and-post-build")
+		suite.RunBuildTest("pre-and-post-build", true)
 	})
 	assert.Contains(suite.T(), output, "HELLO FROM PRE-BUILD")
 }
@@ -62,7 +62,7 @@ func captureOutput(f func()) string {
 	return buf.String()
 }
 
-func (suite *E2ETestSuite) RunBuildTest(fixture string) {
+func (suite *E2ETestSuite) RunBuildTest(fixture string, verbose bool) {
 	// Setup test environment
 	publicDir, err := os.MkdirTemp("", fmt.Sprintf("%s-public", fixture))
 	suite.NoError(err, "Failed to create temp directory %s", publicDir)
@@ -73,7 +73,7 @@ func (suite *E2ETestSuite) RunBuildTest(fixture string) {
 	now, err := time.Parse(time.RFC3339, "2024-03-01T10:00:00Z")
 	suite.NoError(err)
 
-	err = commands.Build(siteDir, publicDir, false, false, now)
+	err = commands.Build(siteDir, publicDir, false, verbose, now)
 	suite.NoError(err)
 
 	assertDirContents(suite.T(), expectedDir, publicDir)
