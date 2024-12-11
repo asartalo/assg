@@ -98,11 +98,7 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 		return nil, err
 	}
 
-	hierarchy, err := GatherContent(*cfg, verbose)
-	if err != nil {
-		return nil, err
-	}
-	generator.hierarchy = hierarchy
+	generator.hierarchy = NewPageHierarchy(verbose)
 
 	funcMap := defineFuncs(generator)
 	templates := template.New(funcMap)
@@ -181,6 +177,11 @@ func (g *Generator) Build(now time.Time) error {
 		}
 	}
 
+	err := g.hierarchy.GatherContent(g.Config.ContentDirectoryAbsolute())
+	if err != nil {
+		return err
+	}
+
 	g.Println("\nBuilding site...")
 	for _, node := range g.hierarchy.Pages {
 		err := g.GeneratePage(node.Page)
@@ -190,7 +191,7 @@ func (g *Generator) Build(now time.Time) error {
 	}
 
 	g.Println("\nCopying static files...")
-	err := g.CopyStaticFiles()
+	err = g.CopyStaticFiles()
 	if err != nil {
 		return err
 	}

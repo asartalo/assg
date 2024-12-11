@@ -3,6 +3,8 @@ package generator
 import (
 	"cmp"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 
@@ -69,6 +71,59 @@ func (ph *ContentHierarchy) AddPage(page *content.WebPage) {
 		ph.Printf("  It's a taxonomy page: %s\n", page.TaxonomyType())
 		ph.TaxonomyPage[page.TaxonomyType()] = page
 	}
+}
+
+func (ph *ContentHierarchy) GatherContent(contentDir string) error {
+	err := filepath.WalkDir(contentDir, func(contentPath string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			// skip if basename has a dot prefix
+			if filepath.Base(contentPath)[0] == '.' {
+				return filepath.SkipDir
+			}
+		} else {
+			relPath, err := filepath.Rel(contentDir, contentPath)
+			if err != nil {
+				return err
+			}
+
+			if isMarkdown(info) {
+				ph.Println("Processing markdown file:", relPath)
+				return ph.handleMarkdownFile(contentPath, relPath)
+			} else {
+				ph.AddStaticFile(relPath, contentPath)
+				return nil
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	ph.Retree()
+
+	return nil
+}
+
+func (ph *ContentHierarchy) handleMarkdownFile(dPath string, relPath string) error {
+	fileContent, err := os.ReadFile(dPath)
+	if err != nil {
+		return err
+	}
+
+	page, err := content.ParsePage(relPath, fileContent)
+	if err != nil {
+		return err
+	}
+
+	ph.AddPage(page)
+
+	return nil
 }
 
 func (ph *ContentHierarchy) AddStaticFile(relPath, fullPath string) {

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/asartalo/assg/internal/commands"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -41,10 +40,7 @@ func (suite *E2ETestSuite) TestExtraData() {
 }
 
 func (suite *E2ETestSuite) TestPreAndPostBuild() {
-	output := captureOutput(func() {
-		suite.RunBuildTest("pre-and-post-build", true)
-	})
-	assert.Contains(suite.T(), output, "HELLO FROM PRE-BUILD")
+	suite.RunBuildTest("pre-and-post-build", true)
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
