@@ -36,6 +36,12 @@ func NewPageHierarchy(verbose bool) *ContentHierarchy {
 	}
 }
 
+func (ph *ContentHierarchy) Clear(args ...interface{}) {
+	ph.Pages = make(map[string]*ContentNode)
+	ph.TaxonomyPage = make(map[string]*content.WebPage)
+	ph.StaticFiles = make(map[string]string)
+}
+
 func (ph *ContentHierarchy) Println(args ...interface{}) {
 	if ph.verbose {
 		fmt.Println(args...)
@@ -74,6 +80,7 @@ func (ph *ContentHierarchy) AddPage(page *content.WebPage) {
 }
 
 func (ph *ContentHierarchy) GatherContent(contentDir string) error {
+	ph.Clear()
 	err := filepath.WalkDir(contentDir, func(contentPath string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
