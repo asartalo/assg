@@ -22,7 +22,6 @@ jobs:
         go-version: '1.23'
 
     - name: Test
-      # run: go test -race -covermode atomic -coverprofile=covprof -v ./...
       run: go test -race -covermode atomic -coverpkg=./internal/...,./cmd/... -coverprofile=covprof -v ./...
 
 
