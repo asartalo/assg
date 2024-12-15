@@ -1,80 +1,57 @@
 package e2e
 
 import (
-	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"testing"
 	"time"
 
 	"github.com/asartalo/assg/internal/commands"
-	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/assert"
 )
 
-type E2ETestSuite struct {
-	suite.Suite
-	FixtureDirectory string
+func TestBasicSite(t *testing.T) {
+	RunBuildTest("basic", t, false)
 }
 
-func (suite *E2ETestSuite) TestBasicSite() {
-	suite.RunBuildTest("basic", false)
+func TestSiteHomeOnly(t *testing.T) {
+	RunBuildTest("site-home-only", t, false)
 }
 
-func (suite *E2ETestSuite) TestSiteHomeOnly() {
-	suite.RunBuildTest("site-home-only", false)
+func TestStaticFiles(t *testing.T) {
+	RunBuildTest("static-files", t, false)
 }
 
-func (suite *E2ETestSuite) TestStaticFiles() {
-	// Static files are just copied over to the public directory
-	suite.RunBuildTest("static-files", false)
+func TestBlogExample(t *testing.T) {
+	RunBuildTest("blog-posts", t, false)
 }
 
-func (suite *E2ETestSuite) TestBlogExample() {
-	suite.RunBuildTest("blog-posts", false)
+func TestExtraData(t *testing.T) {
+	RunBuildTest("extra-data", t, false)
 }
 
-func (suite *E2ETestSuite) TestExtraData() {
-	suite.RunBuildTest("extra-data", false)
+func TestPreAndPostBuild(t *testing.T) {
+	RunBuildTest("pre-and-post-build", t, false)
 }
 
-func (suite *E2ETestSuite) TestPreAndPostBuild() {
-	suite.RunBuildTest("pre-and-post-build", true)
-}
-
-func (suite *E2ETestSuite) SetupSuite() {
-	// current working directory
+func RunBuildTest(fixture string, t *testing.T, verbose bool) {
+	t.Parallel()
 	cwd, err := os.Getwd()
-	suite.NoError(err, "Unable to get working directory")
-	suite.FixtureDirectory = path.Join(cwd, "fixtures")
-}
+	fixtureDirectory := path.Join(cwd, "fixtures")
+	assert.NoError(t, err, "Unable to get working directory")
 
-func captureOutput(f func()) string {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	f()
-	log.SetOutput(os.Stderr)
-	return buf.String()
-}
-
-func (suite *E2ETestSuite) RunBuildTest(fixture string, verbose bool) {
-	// Setup test environment
 	publicDir, err := os.MkdirTemp("", fmt.Sprintf("%s-public", fixture))
-	suite.NoError(err, "Failed to create temp directory %s", publicDir)
+	assert.NoError(t, err, "Failed to create temp directory %s", publicDir)
 	defer os.RemoveAll(publicDir)
 
-	siteDir := path.Join(suite.FixtureDirectory, fixture)
+	siteDir := path.Join(fixtureDirectory, fixture)
 	expectedDir := path.Join(siteDir, "public-expected")
 	now, err := time.Parse(time.RFC3339, "2024-03-01T10:00:00Z")
-	suite.NoError(err)
+	assert.NoError(t, err)
 
 	err = commands.Build(siteDir, publicDir, false, verbose, now)
-	suite.NoError(err)
+	assert.NoError(t, err)
 
-	assertDirContents(suite.T(), expectedDir, publicDir)
-}
-
-func TestE2ETestSuite(t *testing.T) {
-	suite.Run(t, new(E2ETestSuite))
+	assertDirContents(t, expectedDir, publicDir)
 }
