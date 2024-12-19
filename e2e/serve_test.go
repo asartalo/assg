@@ -31,7 +31,7 @@ func TestIt(t *testing.T) {
 	fixturesDirectory := path.Join(cwd, "fixtures")
 
 	// Start the test server
-	srv, err := server.NewServer(path.Join(fixturesDirectory, "basic"), false)
+	srv, err := server.NewServer(path.Join(fixturesDirectory, "blog-posts"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestIt(t *testing.T) {
 	// Run the browser
 	var result string
 	resp, err := chromedp.RunResponse(ctx,
-		chromedp.Navigate("http://localhost:8080/regular-content/"),
+		chromedp.Navigate("http://localhost:8080/"),
 	)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func TestIt(t *testing.T) {
 	chromedp.Run(ctx, chromedp.Title(&result))
 
 	// Check the result
-	if result != "A Page" {
+	if result != "My Blog" {
 		t.Errorf("got unexpected title: %q", result)
 	}
 }
