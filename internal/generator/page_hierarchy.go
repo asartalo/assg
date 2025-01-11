@@ -24,15 +24,22 @@ type ContentHierarchy struct {
 	TaxonomyPage  map[string]*content.WebPage
 	childrenCache map[string][]*content.WebPage
 	StaticFiles   map[string]string
+	includeDrafts bool
 	verbose       bool
 }
 
-func NewPageHierarchy(verbose bool) *ContentHierarchy {
+type ContentHierarchyOptions struct {
+	IncludeDrafts bool
+	Verbose       bool
+}
+
+func NewPageHierarchy(options ContentHierarchyOptions) *ContentHierarchy {
 	return &ContentHierarchy{
-		Pages:        make(map[string]*ContentNode),
-		TaxonomyPage: make(map[string]*content.WebPage),
-		StaticFiles:  make(map[string]string),
-		verbose:      verbose,
+		Pages:         make(map[string]*ContentNode),
+		TaxonomyPage:  make(map[string]*content.WebPage),
+		StaticFiles:   make(map[string]string),
+		verbose:       options.Verbose,
+		includeDrafts: options.IncludeDrafts,
 	}
 }
 
@@ -128,7 +135,9 @@ func (ph *ContentHierarchy) handleMarkdownFile(dPath string, relPath string) err
 		return err
 	}
 
-	ph.AddPage(page)
+	if !page.IsDraft() || ph.includeDrafts {
+		ph.AddPage(page)
+	}
 
 	return nil
 }

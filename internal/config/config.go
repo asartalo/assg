@@ -23,8 +23,14 @@ type Config struct {
 	Sitemap          bool             `toml:"sitemap"`
 	PreBuildCmd      string           `toml:"prebuild"`
 	PostBuildCmd     string           `toml:"postbuild"`
+	ServerConfig     ServerConfig     `toml:"server"`
 	DevMode          bool
 	rootDirectory    string
+}
+
+type ServerConfig struct {
+	Port        string   `toml:"port"`
+	WatchIgnore []string `toml:"watch_ignore"`
 }
 
 type TaxonomyConfig struct {

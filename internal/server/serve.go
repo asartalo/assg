@@ -80,7 +80,10 @@ func (s *Server) Start(ready chan bool) error {
 		}
 	}
 
-	watcher, err := NewRecursiveWatcher(srcDir, []string{config.OutputDirectory}, buildIt)
+	ignoreList := append([]string{}, config.OutputDirectory)
+	ignoreList = append(ignoreList, config.ServerConfig.WatchIgnore...)
+	log.Printf("Ignoring: %v\n", ignoreList)
+	watcher, err := NewRecursiveWatcher(srcDir, ignoreList, buildIt)
 
 	if err != nil {
 		return err

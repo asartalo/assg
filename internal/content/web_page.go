@@ -142,3 +142,7 @@ func (p *WebPage) RenderedPath() string {
 	lastDotIndex := len(p.MarkdownPath) - len(extension)
 	return p.MarkdownPath[:lastDotIndex]
 }
+
+func (p *WebPage) IsDraft() bool {
+	return p.FrontMatter.Draft
+}

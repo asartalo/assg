@@ -98,7 +98,10 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 		return nil, err
 	}
 
-	generator.hierarchy = NewPageHierarchy(verbose)
+	generator.hierarchy = NewPageHierarchy(ContentHierarchyOptions{
+		IncludeDrafts: cfg.IncludeDrafts,
+		Verbose:       verbose,
+	})
 
 	funcMap := defineFuncs(generator)
 	templates := template.New(funcMap)
