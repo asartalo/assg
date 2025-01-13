@@ -36,17 +36,17 @@ func TestIt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cont := make(chan bool)
-	go srv.Start(cont)
+	ready := make(chan bool)
+	go srv.Start(ready)
 	log.Println("Server started")
 	defer srv.Stop()
-	<-cont
+	<-ready
 
 	log.Println("Checking the site")
 	// Run the browser
 	var result string
 	resp, err := chromedp.RunResponse(ctx,
-		chromedp.Navigate("http://localhost:8080/"),
+		chromedp.Navigate("http://localhost:8181/"),
 	)
 
 	if err != nil {

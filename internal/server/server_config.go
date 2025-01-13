@@ -8,7 +8,7 @@ import (
 	"github.com/asartalo/assg/internal/config"
 )
 
-func LoadServeConfiguration(port, srcDir string, includeDrafts bool) (*config.Config, error) {
+func LoadServeConfiguration(srcDir string, includeDrafts bool) (*config.Config, error) {
 	serveDirectory, err := os.MkdirTemp("", "public-assg")
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func LoadServeConfiguration(port, srcDir string, includeDrafts bool) (*config.Co
 	config.DevMode = true
 	config.OutputDirectory = serveDirectory
 	config.IncludeDrafts = includeDrafts
-	config.BaseURL = fmt.Sprintf("http://localhost:%s", port)
+	config.BaseURL = fmt.Sprintf("http://localhost:%d", config.ServerConfig.Port)
 
 	return config, nil
 }

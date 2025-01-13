@@ -29,7 +29,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port        string   `toml:"port"`
+	Port        int64    `toml:"port"`
 	WatchIgnore []string `toml:"watch_ignore"`
 }
 
@@ -84,5 +84,9 @@ func setDefaults(config *Config) {
 
 	if config.OutputDirectory == "" {
 		config.OutputDirectory = "public"
+	}
+
+	if config.ServerConfig.Port == 0 {
+		config.ServerConfig.Port = 8080
 	}
 }

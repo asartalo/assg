@@ -9,3 +9,6 @@ sitemap = true
 [markdown]
 highlight_code = true
 smart_punctuation = true
+
+[server]
+port = 8181

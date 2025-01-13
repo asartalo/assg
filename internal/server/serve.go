@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -36,7 +37,7 @@ type Server struct {
 }
 
 func NewServer(srcDir string, includeDrafts bool) (*Server, error) {
-	config, err := LoadServeConfiguration("8080", srcDir, includeDrafts)
+	config, err := LoadServeConfiguration(srcDir, includeDrafts)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +50,10 @@ func NewServer(srcDir string, includeDrafts bool) (*Server, error) {
 }
 
 func (s *Server) Start(ready chan bool) error {
-	port := "8080"
 	srcDir := s.SrcDir
 	includeDrafts := s.Config.IncludeDrafts
 
-	config, err := LoadServeConfiguration(port, srcDir, includeDrafts)
+	config, err := LoadServeConfiguration(srcDir, includeDrafts)
 	if err != nil {
 		return err
 	}
@@ -94,6 +94,7 @@ func (s *Server) Start(ready chan bool) error {
 	mux := http.NewServeMux()
 	mux.Handle("/", fileServer)
 
+	port := fmt.Sprintf("%d", config.ServerConfig.Port)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
