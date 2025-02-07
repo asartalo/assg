@@ -9,3 +9,7 @@ This is the content of a regular post.
 ## A content heading
 
 Another paragraph.
+
+```html
+<p>Some code</p>
+```

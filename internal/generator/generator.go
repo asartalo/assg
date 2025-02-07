@@ -359,8 +359,9 @@ func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
 		Authors:   []*FeedAuthor{g.defaultFeedAuthor()},
 	}
 
-	// If the content is too short, use that instead of summary
-	if page.Content.Len() > 500 {
+	contentLength := page.Content.Len()
+	// If the content is too long, or empty, use the summary
+	if contentLength > 500 || contentLength == 0 {
 		summary, err := page.Summary()
 		if err != nil {
 			return nil, err
@@ -370,10 +371,10 @@ func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
 			Type:    "html",
 			Content: summary,
 		}
+		// If the content is too short, use that instead
 	} else {
 		item.Content = &FeedContent{
 			Type:    "html",
-			Base:    pageUrl,
 			Content: strings.TrimSpace(page.Content.String()),
 		}
 	}

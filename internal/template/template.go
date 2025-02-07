@@ -64,6 +64,9 @@ func funcs(otherFuncMap template.FuncMap) template.FuncMap {
 	initMap["timeAttr"] = func(time time.Time) string {
 		return time.Format("2006-01-02T15:04:05Z07:00")
 	}
+	initMap["safe"] = func(s string) template.HTML {
+		return template.HTML(s)
+	}
 
 	for k, v := range otherFuncMap {
 		initMap[k] = v

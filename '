@@ -34,7 +34,7 @@
     <id>http://example.com/posts/a-taste-of-home/</id>
     <published>2024-02-18T12:05:00Z</published>
     <updated>2024-02-18T12:05:00Z</updated>
-    <content type="html">&lt;p&gt;Baked a delicious apple pie from scratch using my grandmother’s secret recipe.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/posts/a-taste-of-home/">&lt;p&gt;Baked a delicious apple pie from scratch using my grandmother’s secret recipe.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>
@@ -45,7 +45,7 @@
     <id>http://example.com/posts/lost-in-pages/</id>
     <published>2024-02-12T21:10:00Z</published>
     <updated>2024-02-12T21:10:00Z</updated>
-    <content type="html">&lt;p&gt;Finished a novel that made me question everything I thought I knew about life and love.&lt;/p&gt;&#xA;&lt;p&gt;This is a most wonderful experience.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/posts/lost-in-pages/">&lt;p&gt;Finished a novel that made me question everything I thought I knew about life and love.&lt;/p&gt;&#xA;&lt;p&gt;This is a most wonderful experience.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>
@@ -56,7 +56,7 @@
     <id>http://example.com/posts/unexpected-discoveries/</id>
     <published>2024-02-05T18:45:00Z</published>
     <updated>2024-02-05T18:45:00Z</updated>
-    <content type="html">&lt;p&gt;Stumbled upon a street musician playing a hauntingly beautiful melody on a handcrafted flute.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/posts/unexpected-discoveries/">&lt;p&gt;Stumbled upon a street musician playing a hauntingly beautiful melody on a handcrafted flute.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>
@@ -67,7 +67,7 @@
     <id>http://example.com/posts/day-2/</id>
     <published>2024-02-02T14:30:00Z</published>
     <updated>2024-02-02T14:30:00Z</updated>
-    <content type="html">&lt;p&gt;Today I discovered a hidden coffee shop downtown with the most amazing latte art.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/posts/day-2/">&lt;p&gt;Today I discovered a hidden coffee shop downtown with the most amazing latte art.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>
@@ -89,7 +89,7 @@
     <id>http://example.com/</id>
     <published>0001-01-01T00:00:00Z</published>
     <updated>0001-01-01T00:00:00Z</updated>
-    <content type="html">&lt;p&gt;This is a blog.&lt;/p&gt;</content>
+    <content type="html" base="http://example.com/">&lt;p&gt;This is a blog.&lt;/p&gt;</content>
     <author>
       <name>Jane Doe</name>
     </author>

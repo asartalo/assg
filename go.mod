@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/amit7itz/goset v1.2.1
-	github.com/asartalo/formathtml v0.1.1
+	github.com/asartalo/formathtml v0.1.3
 	github.com/bep/debounce v1.2.1
 	github.com/chromedp/chromedp v0.11.2
 	github.com/deckarep/golang-set/v2 v2.7.0

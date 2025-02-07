@@ -57,7 +57,7 @@ type FeedEntry struct {
 type FeedContent struct {
 	XMLName xml.Name `xml:"content"`
 	Type    string   `xml:"type,attr"`
-	Base    string   `xml:"base,attr,omitempty"`
+	Src     string   `xml:"src,attr,omitempty"`
 	Content string   `xml:",chardata"`
 }
 
