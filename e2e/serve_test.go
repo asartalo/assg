@@ -14,12 +14,19 @@ import (
 func TestIt(t *testing.T) {
 	t.Parallel()
 
-	// chromedp.WithLogf(t.Logf)
-	c := context.Background()
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	opts = append(opts,
+		chromedp.Flag("headless", true),    // Ensure headless mode is enabled
+		chromedp.Flag("disable-gpu", true), // Disable GPU in headless mode
+		chromedp.Flag("no-sandbox", true),  // Disable sandbox for Chrome
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
 
 	// Create a new browser
 	ctx, cancel := chromedp.NewContext(
-		c,
+		allocCtx,
 		chromedp.WithLogf(t.Logf),
 	)
 	defer cancel()
