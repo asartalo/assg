@@ -10,6 +10,8 @@
   packages = with pkgs; [
     nodejs_18
     entr
+    emmet-ls
+    golangci-lint-langserver
   ];
 
   # https://devenv.sh/scripts/
