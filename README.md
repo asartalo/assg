@@ -82,9 +82,17 @@ postbuild = "sh post.sh"
 
 ```toml
 [server]
-# Port for the development server
-port = 8181
+# Port for the development server. Default is 8080.
+port = 8080
 
-# Directories to ignore when watching for changes
+# List of directories relative to project root to ignore when watching for changes.
 watch_ignore = ["sass", "src"]
+```
+
+## Development
+
+Testing the local server-related code requires Google chrome for now. Make sure that the chrome binary (e.g. `google-chrome`) is available in your path. Then run:
+
+```sh
+go test
 ```
