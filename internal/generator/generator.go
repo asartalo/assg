@@ -67,7 +67,8 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 
 	funcMap["atomLink"] = func() htmltpl.HTML {
 		return htmltpl.HTML(fmt.Sprintf(
-			`<link rel="alternate" type="application/atom+xml" href="%s">`,
+			`<link rel="alternate" title="%s Feed" type="application/atom+xml" href="%s">`,
+			generator.Config.Title,
 			generator.FullUrl("atom.xml"),
 		))
 	}
