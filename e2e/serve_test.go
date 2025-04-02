@@ -11,7 +11,7 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
-func TestIt(t *testing.T) {
+func TestServer(t *testing.T) {
 	t.Parallel()
 
 	opts := chromedp.DefaultExecAllocatorOptions[:]
