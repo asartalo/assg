@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"bytes"
 	"cmp"
 	"fmt"
 	htmltpl "html/template"
@@ -11,16 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/asartalo/assg/internal/config"
 	"github.com/asartalo/assg/internal/content"
 	"github.com/asartalo/assg/internal/template"
-	"github.com/gertd/go-pluralize"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 type TermTTC map[string]*TaxonomyTermContent
@@ -34,12 +29,13 @@ type Generator struct {
 	verbose       bool
 	renderedPaths []string
 	ag            *AtomGenerator
+	pg            *PageGenerator
 }
 
 func defineFuncs(generator *Generator) htmltpl.FuncMap {
 	funcMap := make(htmltpl.FuncMap)
 	funcMap["sectionPages"] = func(indexPath string, max, offset int) []TemplateContent {
-		return generator.GetSectionPages(indexPath, max, offset)
+		return generator.pg.GetSectionPages(indexPath, max, offset)
 	}
 
 	funcMap["sectionIndex"] = func(indexPath string) IndexTemplateContent {
@@ -47,7 +43,7 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 		if page == nil {
 			fmt.Printf("Unable to find page \"%s\"\n", indexPath)
 		}
-		templateContent := generator.PageToTemplateContent(page)
+		templateContent := generator.pg.PageToTemplateContent(page)
 
 		return IndexTemplateContent{
 			TemplateContent: templateContent,
@@ -95,10 +91,6 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 		verbose: verbose,
 	}
 
-	generator.ag = &AtomGenerator{
-		mg: generator,
-	}
-
 	err := generator.ClearOutputDirectory()
 	if err != nil {
 		return nil, err
@@ -119,16 +111,23 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 	generator.Tmpl = templates
 	generator.taxonomyCache = make(map[string]TermTTC)
 
+	generator.ag = &AtomGenerator{mg: generator}
+	generator.pg = &PageGenerator{
+		mg:        generator,
+		Config:    cfg,
+		hierarchy: generator.hierarchy,
+	}
+
 	return generator, err
 }
 
-func (g *Generator) Println(args ...interface{}) {
+func (g *Generator) Println(args ...any) {
 	if g.verbose {
 		fmt.Println(args...)
 	}
 }
 
-func (g *Generator) Printf(format string, args ...interface{}) {
+func (g *Generator) Printf(format string, args ...any) {
 	if g.verbose {
 		fmt.Printf(format, args...)
 	}
@@ -193,7 +192,7 @@ func (g *Generator) Build(now time.Time) error {
 
 	g.Println("\nBuilding site...")
 	for _, node := range g.hierarchy.Pages {
-		err := g.GeneratePage(node.Page)
+		err := g.pg.GeneratePage(node.Page, now)
 		if err != nil {
 			return err
 		}
@@ -280,100 +279,19 @@ func (g *Generator) GenerateSitemap() error {
 	if err != nil {
 		return err
 	}
-	defer sitemapFile.Close()
 
 	err = sitemap.WriteXML(sitemapFile)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return sitemapFile.Close()
 }
 
 const DEFAULT_TEMPLATE = "default.html"
 
 func (g *Generator) OutputPath(endPath string) string {
 	return path.Join(g.Config.OutputDirectoryAbsolute(), endPath)
-}
-
-func (g *Generator) GeneratePage(page *content.WebPage) (err error) {
-	g.Printf("Generating page: %s\n", page.MarkdownPath)
-	if page == nil {
-		return fmt.Errorf("page is nil")
-	}
-
-	if page.FrontMatter.Draft && !g.Config.IncludeDrafts {
-		return nil
-	}
-
-	templateToUse := g.GetTemplateToUse(page)
-
-	// check if template is defined
-	if !g.Tmpl.TemplateExists(templateToUse) {
-		return fmt.Errorf(
-			"the template \"%s\" for the page \"%s\" does not exist",
-			templateToUse,
-			page.MarkdownPath,
-		)
-	}
-
-	g.Printf("  Using template: %s\n", templateToUse)
-
-	pagePath := page.RenderedPath()
-	templateData := g.PageToTemplateContent(page)
-	g.Printf("  Destination: %s\n", pagePath)
-
-	if page.IsTaxonomy() {
-		err = g.generateTaxonomyPages(
-			page,
-			templateData,
-			pagePath,
-			templateToUse,
-		)
-	} else if page.IsIndex() {
-		err = g.generateIndexPages(
-			page,
-			templateData,
-			pagePath,
-			templateToUse,
-			g.PagesToTemplateContents(page),
-		)
-	} else {
-		parentPage := g.hierarchy.GetParent(*page)
-		if parentPage != nil {
-			g.Printf("  Parent page: %s\n", parentPage.MarkdownPath)
-			err = g.renderPage(
-				g.generateChildPageData(page, parentPage, templateData),
-				pagePath,
-				templateToUse,
-				true,
-			)
-		} else {
-			g.Printf("  Not a child page\n")
-			err = g.renderPage(templateData, pagePath, templateToUse, true)
-		}
-	}
-
-	return
-}
-
-func (g *Generator) GetSectionPages(indexPath string, max int, offset int) (sectionPages []TemplateContent) {
-	section := g.hierarchy.GetPage(indexPath)
-	if section == nil {
-		return sectionPages
-	}
-
-	children := g.hierarchy.GetChildren(*section)
-	for i, page := range children {
-		if i < offset {
-			continue
-		}
-
-		if i >= offset+max {
-			break
-		}
-
-		sectionPages = append(sectionPages, g.PageToTemplateContent(page))
-	}
-
-	return sectionPages
 }
 
 func (g *Generator) ensurePopulatedTaxonomyCache(taxonomy string) TermTTC {
@@ -438,159 +356,7 @@ func (g *Generator) GetTaxonomyTermsForPage(rootPath string, taxonomy string) (t
 	return termTemplates
 }
 
-func (g *Generator) generateTaxonomyPages(
-	page *content.WebPage,
-	templateData TemplateContent,
-	pagePath string,
-	templateToUse string,
-) (err error) {
-	g.Printf("  Generating taxonomy pages for: %s\n", page.MarkdownPath)
-	taxonomy := page.TaxonomyType()
-	termMapping := g.hierarchy.GetTaxonomyTerms(taxonomy)
-	paginateBy := page.FrontMatter.Index.PaginateBy
-
-	err = g.renderPage(templateData, pagePath, templateToUse, true)
-	if err != nil {
-		return err
-	}
-
-	now := time.Now()
-	titleCaser := cases.Title(language.English).String
-	indexTemplateToUse := page.FrontMatter.Index.PageTemplate
-	pluralizer := pluralize.NewClient()
-	taxonomySingular := pluralizer.Singular(titleCaser(taxonomy))
-	for term, pages := range termMapping {
-		termDir := path.Join(pagePath, dashSpaces(term))
-		taxIndexFields := page.FrontMatter.Index
-		iPageFrontMatter := content.FrontMatter{
-			Title: titleCaser(term),
-			Date:  now,
-			Description: fmt.Sprintf(
-				"%s: %s",
-				taxonomySingular,
-				titleCaser(term),
-			),
-			Index:    taxIndexFields,
-			Template: page.FrontMatter.Index.PageTemplate,
-		}
-		termPage := content.WebPage{
-			FrontMatter: iPageFrontMatter,
-			Content:     *new(bytes.Buffer),
-			MarkdownPath: path.Join(
-				page.RenderedPath(),
-				fmt.Sprintf("%s.md", dashSpaces(term)),
-			),
-		}
-
-		err = g.generateIndexPages(
-			&termPage,
-			g.PageToTemplateContent(&termPage),
-			termDir,
-			indexTemplateToUse,
-			PaginateTransform(pages, paginateBy, g.PageToTemplateContent),
-		)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return
-}
-
-func (g *Generator) generateIndexPages(
-	page *content.WebPage,
-	templateData TemplateContent,
-	pagePath string,
-	templateToUse string,
-	pagingGroups [][]TemplateContent,
-) (err error) {
-	g.Printf("  Generating index pages for: %s\n", page.MarkdownPath)
-	pagingCount := len(pagingGroups)
-
-	// render redirect page
-	if pagingCount > 1 {
-		page1Path := path.Join(pagePath, "page", "1")
-		redirectPath := g.FullUrl(page.RootPath())
-
-		err = g.renderPage(redirectPath, page1Path, "_redirect", false)
-		if err != nil {
-			return err
-		}
-	}
-
-	for i, group := range pagingGroups {
-		var destinPath string
-		if i == 0 {
-			destinPath = pagePath
-		} else {
-			destinPath = path.Join(pagePath, "page", strconv.Itoa(i+1))
-		}
-
-		prev := ""
-		if i > 0 {
-			if i == 1 {
-				prev = slashPath(page.RootPath())
-			} else {
-				prev = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i)))
-			}
-		}
-
-		next := ""
-		if pagingCount > 1 {
-			lastIndex := pagingCount - 1
-			if i < lastIndex {
-				next = slashPath(path.Join(page.RootPath(), "page", strconv.Itoa(i+2)))
-			}
-		}
-
-		indexTemplateData := IndexTemplateContent{
-			TemplateContent: templateData,
-			Pages:           group,
-			Prev:            prev,
-			Next:            next,
-			CurrentPage:     i + 1,
-			TotalPages:      pagingCount,
-		}
-
-		err = g.renderPage(indexTemplateData, destinPath, templateToUse, true)
-	}
-
-	return
-}
-
-func (g *Generator) generateChildPageData(
-	page *content.WebPage,
-	parentPage *content.WebPage,
-	templateData TemplateContent,
-) PaginatedTemplateContent {
-
-	prev := ""
-	prevPage := g.hierarchy.GetPrevPage(parentPage, page)
-	var prevPageData TemplateContent
-	if prevPage != nil {
-		prev = prevPage.RootPath()
-		prevPageData = g.PageToTemplateContent(prevPage)
-	}
-
-	next := ""
-	nextPage := g.hierarchy.GetNextPage(parentPage, page)
-	var nextPageData TemplateContent
-	if nextPage != nil {
-		next = nextPage.RootPath()
-		nextPageData = g.PageToTemplateContent(nextPage)
-	}
-
-	return PaginatedTemplateContent{
-		TemplateContent: templateData,
-		Prev:            prev,
-		PrevPage:        prevPageData,
-		Next:            next,
-		NextPage:        nextPageData,
-	}
-}
-
-func (g *Generator) pathValue(templateData interface{}) string {
+func (g *Generator) pathValue(templateData any) string {
 	switch v := templateData.(type) {
 	case string:
 		return v
@@ -599,63 +365,6 @@ func (g *Generator) pathValue(templateData interface{}) string {
 	default:
 		return ""
 	}
-}
-
-func (g *Generator) renderPage(
-	templateData interface{},
-	pagePath string,
-	templateToUse string,
-	canonical bool,
-) error {
-	destinationDir := g.OutputPath(pagePath)
-	err := os.MkdirAll(destinationDir, 0755)
-	if err != nil {
-		return err
-	}
-
-	g.Printf("  Rendering page: %s\n", g.pathValue(templateData))
-	destinationPath := path.Join(destinationDir, "index.html")
-	destinationFile, err := os.OpenFile(destinationPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		g.Printf("Error creating file")
-		return err
-	}
-
-	err = g.Tmpl.RenderTemplate(
-		templateToUse,
-		destinationFile,
-		templateData,
-	)
-
-	if err != nil {
-		g.Printf("Error rendering %s\n", destinationPath)
-		return err
-	}
-
-	err = destinationFile.Close()
-	if err != nil {
-		g.Printf("Error closing file %s\n", destinationPath)
-		return err
-	}
-
-	if canonical {
-		g.renderedPaths = append(g.renderedPaths, content.RootPath(pagePath))
-	}
-
-	return err
-}
-
-func (g *Generator) GetTemplateToUse(page *content.WebPage) string {
-	templateToUse := DEFAULT_TEMPLATE
-	parent := g.hierarchy.GetParent(*page)
-
-	if page.FrontMatter.Template != "" {
-		templateToUse = page.FrontMatter.Template
-	} else if parent != nil && parent.FrontMatter.Index.PageTemplate != "" {
-		templateToUse = parent.FrontMatter.Index.PageTemplate
-	}
-
-	return templateToUse
 }
 
 func (g *Generator) FullUrl(path string) string {
@@ -671,7 +380,7 @@ func (g *Generator) SiteUrlWithTrailingSlash() string {
 }
 
 func copyFile(from, to string) error {
-	// open sourcefile for reading
+	// open source file for reading
 	source, err := os.OpenFile(from, os.O_RDONLY, 0600)
 	if err != nil {
 		return err
@@ -689,31 +398,6 @@ func copyFile(from, to string) error {
 	_, err = destination.ReadFrom(source)
 
 	return err
-}
-
-func (g *Generator) PageToTemplateContent(page *content.WebPage) TemplateContent {
-	summary := ""
-	actualSummary, err := page.Summary()
-	if err == nil {
-		summary = actualSummary
-	}
-
-	return TemplateContent{
-		FrontMatter: page.FrontMatter,
-		Content:     htmltpl.HTML(string(page.Content.String())),
-		Config:      *g.Config,
-		RootPath:    page.RootPath(),
-		Permalink:   g.FullUrl(page.RootPath()),
-		Path:        page.RenderedPath(),
-		Summary:     htmltpl.HTML(summary),
-	}
-}
-
-func (g *Generator) PagesToTemplateContents(indexPage *content.WebPage) [][]TemplateContent {
-	childPages := g.hierarchy.GetChildren(*indexPage)
-
-	paginateBy := indexPage.FrontMatter.Index.PaginateBy
-	return PaginateTransform(childPages, paginateBy, g.PageToTemplateContent)
 }
 
 func slashPath(path string) string {
