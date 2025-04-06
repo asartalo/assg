@@ -31,5 +31,8 @@ go.work.sum
 # env file
 .env
 
+# Temporary files
+tmp/
+
 # some fixture related files
 e2e/fixtures/pre-and-post-build/content/*.txt
