@@ -63,11 +63,7 @@ func defineFuncs(generator *Generator) htmltpl.FuncMap {
 	}
 
 	funcMap["atomLink"] = func() htmltpl.HTML {
-		return htmltpl.HTML(fmt.Sprintf(
-			`<link rel="alternate" title="%s Feed" type="application/atom+xml" href="%s">`,
-			generator.Config.Title,
-			generator.FullUrl("atom.xml"),
-		))
+		return htmltpl.HTML(generator.ag.AtomLinks())
 	}
 
 	funcMap["devScripts"] = func() htmltpl.HTML {
@@ -111,7 +107,10 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 	generator.Tmpl = templates
 	generator.taxonomyCache = make(map[string]TermTTC)
 
-	generator.ag = &AtomGenerator{mg: generator}
+	generator.ag = &AtomGenerator{
+		mg:     generator,
+		Config: generator.Config,
+	}
 	generator.pg = &PageGenerator{
 		mg:        generator,
 		Config:    cfg,

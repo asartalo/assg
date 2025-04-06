@@ -6,6 +6,11 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type ContentFeed struct {
+	Content string `toml:"content"`
+	Title   string `toml:"title"`
+}
+
 type Config struct {
 	BaseURL          string           `toml:"base_url"`
 	Title            string           `toml:"title"`
@@ -15,6 +20,7 @@ type Config struct {
 	CompileSass      bool             `toml:"compile_sass"`
 	GenerateFeed     bool             `toml:"generate_feed"`
 	FeedLimit        int              `toml:"feed_limit"`
+	FeedsForContent  []ContentFeed    `toml:"feeds_for_content"`
 	Taxonomies       []TaxonomyConfig `toml:"taxonomies"`
 	Markdown         MarkdownConfig   `toml:"markdown"`
 	ContentDirectory string           `toml:"content_directory"`
@@ -88,5 +94,12 @@ func setDefaults(config *Config) {
 
 	if config.ServerConfig.Port == 0 {
 		config.ServerConfig.Port = 8080
+	}
+
+	if len(config.FeedsForContent) == 0 {
+		config.FeedsForContent = append(
+			config.FeedsForContent,
+			ContentFeed{Content: "all"},
+		)
 	}
 }

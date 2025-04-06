@@ -35,6 +35,10 @@ func TestPreAndPostBuild(t *testing.T) {
 	RunBuildTest("pre-and-post-build", t, false)
 }
 
+func TestFeeds(t *testing.T) {
+	RunBuildTest("feeds", t, false)
+}
+
 func RunBuildTest(fixture string, t *testing.T, verbose bool) {
 	t.Parallel()
 	cwd, err := os.Getwd()

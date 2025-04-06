@@ -2,12 +2,14 @@ package generator
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/asartalo/assg/internal/config"
 	"github.com/asartalo/assg/internal/content"
 )
 
@@ -105,7 +107,8 @@ func (f *Feed) WriteXML(atomFile io.Writer) error {
 }
 
 type AtomGenerator struct {
-	mg *Generator
+	mg     *Generator
+	Config *config.Config
 }
 
 func (ag *AtomGenerator) defaultFeedAuthor() *FeedAuthor {
@@ -213,4 +216,21 @@ func (ag *AtomGenerator) createFeedEntry(page *content.WebPage) (*FeedEntry, err
 	}
 
 	return item, nil
+}
+
+func (ag *AtomGenerator) AtomLinks() string {
+	feed := ag.Config.FeedsForContent[0]
+	return fmt.Sprintf(
+		`<link rel="alternate" title="%s" type="application/atom+xml" href="%s">`,
+		ag.feedTitle(feed),
+		ag.mg.FullUrl("atom.xml"),
+	)
+}
+
+func (ag *AtomGenerator) feedTitle(feed config.ContentFeed) string {
+	if feed.Title == "" {
+		return fmt.Sprintf("%s Feed", ag.Config.Title)
+	}
+
+	return feed.Title
 }
