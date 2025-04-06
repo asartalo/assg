@@ -1,11 +1,14 @@
 package generator
 
 import (
+	"encoding/xml"
 	"io"
+	"os"
 	"regexp"
+	"strings"
 	"time"
 
-	"encoding/xml"
+	"github.com/asartalo/assg/internal/content"
 )
 
 type FeedGenerator struct {
@@ -99,4 +102,115 @@ func (f *Feed) WriteXML(atomFile io.Writer) error {
 	_, err = atomFile.Write([]byte("\n"))
 
 	return err
+}
+
+type AtomGenerator struct {
+	mg *Generator
+}
+
+func (ag *AtomGenerator) defaultFeedAuthor() *FeedAuthor {
+	mg := ag.mg
+	if mg.feedAuthor == nil {
+		mg.feedAuthor = &FeedAuthor{
+			Name: mg.Config.Author,
+		}
+	}
+
+	return mg.feedAuthor
+}
+
+func (ag *AtomGenerator) GenerateFeed(now time.Time) error {
+	mg := ag.mg
+	if !mg.Config.GenerateFeed {
+		return nil
+	}
+
+	atomUrl := mg.FullUrl("atom.xml")
+	feed := Feed{
+		Xmlns:     "http://www.w3.org/2005/Atom",
+		Lang:      "en",
+		Title:     mg.Config.Title,
+		Subtitle:  mg.Config.Description,
+		Id:        atomUrl,
+		Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
+		Updated:   FeedDateTime(now),
+		Links: []*FeedLink{
+			{
+				Rel:  "self",
+				Type: "application/atom+xml",
+				Href: atomUrl,
+			},
+			{
+				Rel:  "alternate",
+				Type: "text/html",
+				Href: mg.SiteUrlNoTrailingslash(),
+			},
+		},
+	}
+
+	for _, page := range mg.hierarchy.SortedPages() {
+		if page.IsTaxonomy() || page.IsIndex() {
+			continue
+		}
+
+		entry, err := ag.createFeedEntry(page)
+		if err != nil {
+			return err
+		}
+
+		feed.Entries = append(feed.Entries, entry)
+	}
+
+	atomFilePath := mg.OutputPath("atom.xml")
+
+	atomFile, err := os.OpenFile(atomFilePath, os.O_RDWR|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+
+	err = feed.WriteXML(atomFile)
+	if err != nil {
+		return err
+	}
+
+	return atomFile.Close()
+}
+
+func (ag *AtomGenerator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
+	g := ag.mg
+	pageUrl := g.FullUrl(page.RootPath())
+
+	item := &FeedEntry{
+		Lang:  "en",
+		Title: page.FrontMatter.Title,
+		Links: []*FeedLink{
+			{Rel: "alternate", Type: "text/html", Href: pageUrl},
+		},
+		Published: FeedDateTime(page.FrontMatter.Date),
+		Updated:   FeedDateTime(page.FrontMatter.Date),
+		Id:        pageUrl,
+		Authors:   []*FeedAuthor{ag.defaultFeedAuthor()},
+	}
+
+	contentLength := page.Content.Len()
+	// If the content is too long, or empty, use the summary
+	if contentLength > 500 || contentLength == 0 {
+		summary, err := page.Summary()
+		if err != nil {
+			return nil, err
+		}
+
+		item.Summary = &FeedEntrySummary{
+			Type:    "html",
+			Content: summary,
+		}
+		// If the content is too short, use that instead
+	} else {
+		item.Content = &FeedContent{
+			Type:    "html",
+			Content: strings.TrimSpace(page.Content.String()),
+		}
+	}
+
+	return item, nil
 }

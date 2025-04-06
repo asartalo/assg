@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -42,6 +43,22 @@ func gatherFilesAndDirectoriesInDir(dir string) (files *goset.Set[string], direc
 	return
 }
 
+func writeToFile(path string, content []byte) error {
+	fullPath, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(content)
+
+	return err
+}
+
 func compareExpectedDirContentsToActual(t *testing.T, expectedDir, actualDir string) error {
 	return filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -76,10 +93,25 @@ func compareExpectedDirContentsToActual(t *testing.T, expectedDir, actualDir str
 			}
 
 			if contains(knownTextFileExtensions, filepath.Ext(path)) {
+				expectedStr := string(expectedContent)
+				actualStr := string(actualContent)
+				if expectedStr != actualStr {
+					fmt.Println("NOT EQUAL!")
+					// Write it down to file
+					err := writeToFile("../tmp/expected.txt", expectedContent)
+					if err != nil {
+						fmt.Println(err)
+					}
+					err = writeToFile("../tmp/actual.txt", actualContent)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
+
 				assert.Equal(
 					t,
-					string(expectedContent),
-					string(actualContent),
+					expectedStr,
+					actualStr,
 					"Content mismatch for file %s",
 					relPath,
 				)

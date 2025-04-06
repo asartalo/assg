@@ -33,6 +33,7 @@ type Generator struct {
 	taxonomyCache map[string]TermTTC
 	verbose       bool
 	renderedPaths []string
+	ag            *AtomGenerator
 }
 
 func defineFuncs(generator *Generator) htmltpl.FuncMap {
@@ -92,6 +93,10 @@ func New(cfg *config.Config, verbose bool) (*Generator, error) {
 	generator := &Generator{
 		Config:  cfg,
 		verbose: verbose,
+	}
+
+	generator.ag = &AtomGenerator{
+		mg: generator,
 	}
 
 	err := generator.ClearOutputDirectory()
@@ -200,7 +205,12 @@ func (g *Generator) Build(now time.Time) error {
 		return err
 	}
 
-	g.GenerateFeed(now)
+	err = g.ag.GenerateFeed(now)
+	if err != nil {
+		fmt.Println("IT ERRORd!")
+		fmt.Println(err)
+		return err
+	}
 
 	if g.Config.Sitemap {
 		err := g.GenerateSitemap()
@@ -246,74 +256,6 @@ func (g *Generator) runPostBuild() error {
 	return g.runBuildCommand(g.Config.PostBuildCmd)
 }
 
-func (g *Generator) defaultFeedAuthor() *FeedAuthor {
-	if g.feedAuthor == nil {
-		g.feedAuthor = &FeedAuthor{
-			Name: g.Config.Author,
-		}
-	}
-
-	return g.feedAuthor
-}
-
-func (g *Generator) GenerateFeed(now time.Time) error {
-	if !g.Config.GenerateFeed {
-		return nil
-	}
-
-	atomUrl := g.FullUrl("atom.xml")
-	feed := Feed{
-		Xmlns:     "http://www.w3.org/2005/Atom",
-		Lang:      "en",
-		Title:     g.Config.Title,
-		Subtitle:  g.Config.Description,
-		Id:        atomUrl,
-		Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
-		Updated:   FeedDateTime(now),
-		Links: []*FeedLink{
-			{
-				Rel:  "self",
-				Type: "application/atom+xml",
-				Href: atomUrl,
-			},
-			{
-				Rel:  "alternate",
-				Type: "text/html",
-				Href: g.SiteUrlNoTrailingslash(),
-			},
-		},
-	}
-
-	for _, page := range g.hierarchy.SortedPages() {
-		if page.IsTaxonomy() || page.IsIndex() {
-			continue
-		}
-
-		entry, err := g.createFeedEntry(page)
-		if err != nil {
-			return err
-		}
-
-		feed.Entries = append(feed.Entries, entry)
-	}
-
-	atomFilePath := g.OutputPath("atom.xml")
-
-	atomFile, err := os.OpenFile(atomFilePath, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-
-	defer atomFile.Close()
-
-	err = feed.WriteXML(atomFile)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
 var compareAlpha = func(a, b string) int {
 	return cmp.Compare(a, b)
 }
@@ -343,44 +285,6 @@ func (g *Generator) GenerateSitemap() error {
 	err = sitemap.WriteXML(sitemapFile)
 
 	return err
-}
-
-func (g *Generator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
-	pageUrl := g.FullUrl(page.RootPath())
-
-	item := &FeedEntry{
-		Lang:  "en",
-		Title: page.FrontMatter.Title,
-		Links: []*FeedLink{
-			{Rel: "alternate", Type: "text/html", Href: pageUrl},
-		},
-		Published: FeedDateTime(page.FrontMatter.Date),
-		Updated:   FeedDateTime(page.FrontMatter.Date),
-		Id:        pageUrl,
-		Authors:   []*FeedAuthor{g.defaultFeedAuthor()},
-	}
-
-	contentLength := page.Content.Len()
-	// If the content is too long, or empty, use the summary
-	if contentLength > 500 || contentLength == 0 {
-		summary, err := page.Summary()
-		if err != nil {
-			return nil, err
-		}
-
-		item.Summary = &FeedEntrySummary{
-			Type:    "html",
-			Content: summary,
-		}
-		// If the content is too short, use that instead
-	} else {
-		item.Content = &FeedContent{
-			Type:    "html",
-			Content: strings.TrimSpace(page.Content.String()),
-		}
-	}
-
-	return item, nil
 }
 
 const DEFAULT_TEMPLATE = "default.html"
@@ -716,7 +620,6 @@ func (g *Generator) renderPage(
 		g.Printf("Error creating file")
 		return err
 	}
-	defer destinationFile.Close()
 
 	err = g.Tmpl.RenderTemplate(
 		templateToUse,
@@ -724,7 +627,18 @@ func (g *Generator) renderPage(
 		templateData,
 	)
 
-	if err == nil && canonical {
+	if err != nil {
+		g.Printf("Error rendering %s\n", destinationPath)
+		return err
+	}
+
+	err = destinationFile.Close()
+	if err != nil {
+		g.Printf("Error closing file %s\n", destinationPath)
+		return err
+	}
+
+	if canonical {
 		g.renderedPaths = append(g.renderedPaths, content.RootPath(pagePath))
 	}
 
