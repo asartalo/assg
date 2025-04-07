@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -59,7 +60,50 @@ func writeToFile(path string, content []byte) error {
 	return err
 }
 
+var tmpDir string
+
+func initializeDirs() error {
+	if tmpDir == "" {
+		currentDir, err := filepath.Abs("../")
+		if err != nil {
+			return err
+		}
+		tmpDir = path.Join(currentDir, "tmp")
+		return os.RemoveAll(path.Join(tmpDir, "diff"))
+	}
+
+	return nil
+}
+
+func writeDiffableFiles(expectedDir string, relPath string, expectedContent []byte, actualContent []byte) error {
+	err := initializeDirs()
+	if err != nil {
+		return err
+	}
+
+	namespace := path.Base(path.Dir(expectedDir))
+	nsDir := path.Join(tmpDir, "diff", namespace)
+	expect := path.Join(nsDir, "expected", path.Dir(relPath))
+	actual := path.Join(nsDir, "actual", path.Dir(relPath))
+	err = os.MkdirAll(expect, 0755)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(actual, 0755)
+	if err != nil {
+		return err
+	}
+	err = writeToFile(path.Join(expect, path.Base(relPath)), expectedContent)
+	if err != nil {
+		return err
+	}
+
+	return writeToFile(path.Join(actual, path.Base(relPath)), actualContent)
+}
+
 func compareExpectedDirContentsToActual(t *testing.T, expectedDir, actualDir string) error {
+
 	return filepath.WalkDir(expectedDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -96,13 +140,12 @@ func compareExpectedDirContentsToActual(t *testing.T, expectedDir, actualDir str
 				expectedStr := string(expectedContent)
 				actualStr := string(actualContent)
 				if expectedStr != actualStr {
-					fmt.Println("NOT EQUAL!")
-					// Write it down to file
-					err := writeToFile("../tmp/expected.txt", expectedContent)
-					if err != nil {
-						fmt.Println(err)
-					}
-					err = writeToFile("../tmp/actual.txt", actualContent)
+					err := writeDiffableFiles(
+						expectedDir,
+						relPath,
+						expectedContent,
+						actualContent,
+					)
 					if err != nil {
 						fmt.Println(err)
 					}
