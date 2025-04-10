@@ -8,7 +8,7 @@
 
   # https://devenv.sh/packages/
   packages = with pkgs; [
-    nodejs_18
+    nodejs_22
     entr
     emmet-ls
     golangci-lint-langserver
@@ -34,7 +34,7 @@
 
   languages.javascript = {
     enable = true;
-    package = pkgs.nodejs_18;
+    package = pkgs.nodejs_22;
   };
 
   # https://devenv.sh/pre-commit-hooks/
