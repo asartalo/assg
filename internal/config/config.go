@@ -2,13 +2,60 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
 
 type ContentFeed struct {
-	Content string `toml:"content"`
+	Name    string `toml:"name"`
 	Title   string `toml:"title"`
+	Include string `toml:"include"`
+	Exclude string `toml:"exclude"`
+}
+
+var cfExclusions = make(map[string][]string)
+
+func (cf ContentFeed) Exclusions() []string {
+	key := strings.Trim(cf.Exclude, " ")
+	ex, ok := cfExclusions[key]
+	if !ok {
+		splitted := strings.Split(cf.Exclude, ",")
+		for _, str := range splitted {
+			part := strings.Trim(str, " ")
+			if part != "" {
+				ex = append(ex, part)
+			}
+		}
+
+		cfExclusions[key] = ex
+	}
+
+	return ex
+}
+
+var cfInclusions = make(map[string][]string)
+
+func (cf ContentFeed) Inclusions() []string {
+	key := strings.Trim(cf.Include, " ")
+	in, ok := cfInclusions[key]
+	if !ok {
+		splitted := strings.Split(cf.Include, ",")
+		for _, str := range splitted {
+			part := strings.Trim(str, " ")
+			if part != "" {
+				in = append(in, part)
+			}
+		}
+
+		cfInclusions[key] = in
+	}
+
+	return in
+}
+
+func (cf ContentFeed) IncludeAllInitially() bool {
+	return cf.Include == ""
 }
 
 type Config struct {
@@ -99,7 +146,7 @@ func setDefaults(config *Config) {
 	if len(config.FeedsForContent) == 0 {
 		config.FeedsForContent = append(
 			config.FeedsForContent,
-			ContentFeed{Content: "all"},
+			ContentFeed{Name: "atom"},
 		)
 	}
 }

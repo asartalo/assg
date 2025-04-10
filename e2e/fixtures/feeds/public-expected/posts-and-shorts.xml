@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>RSS Feed Examples</title>
+  <subtitle>Examples for Generating RSS Feeds</subtitle>
+  <id>http://example.com/posts-and-shorts.xml</id>
+  <link rel="self" type="application/atom+xml" href="http://example.com/posts-and-shorts.xml"/>
+  <link rel="alternate" type="text/html" href="http://example.com"/>
+  <generator uri="https://github.com/asartalo/assg">ASSG</generator>
+  <updated>2024-03-01T10:00:00Z</updated>
+  <entry xml:lang="en">
+    <title>Four</title>
+    <id>http://example.com/shorts/four/</id>
+    <published>2024-04-04T10:00:00Z</published>
+    <updated>2024-04-04T10:00:00Z</updated>
+    <content type="html">&lt;p&gt;Four shorts for shorts.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/shorts/four/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Three</title>
+    <id>http://example.com/shorts/three/</id>
+    <published>2024-04-03T10:00:00Z</published>
+    <updated>2024-04-03T10:00:00Z</updated>
+    <content type="html">&lt;p&gt;Three shorts for shorts.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/shorts/three/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Two</title>
+    <id>http://example.com/shorts/two/</id>
+    <published>2024-04-02T10:00:00Z</published>
+    <updated>2024-04-02T10:00:00Z</updated>
+    <content type="html">&lt;p&gt;Two shorts for shorts.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/shorts/two/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>One</title>
+    <id>http://example.com/shorts/one/</id>
+    <published>2024-04-01T10:00:00Z</published>
+    <updated>2024-04-01T10:00:00Z</updated>
+    <content type="html">&lt;p&gt;One short for shorts.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/shorts/one/"/>
+  </entry>
+  <entry xml:lang="en">
+    <title>Welcome</title>
+    <id>http://example.com/posts/welcome/</id>
+    <published>2024-04-01T09:00:00Z</published>
+    <updated>2024-04-01T09:00:00Z</updated>
+    <content type="html">&lt;p&gt;Example post.&lt;/p&gt;</content>
+    <author>
+      <name>Jane Doe</name>
+    </author>
+    <link rel="alternate" type="text/html" href="http://example.com/posts/welcome/"/>
+  </entry>
+</feed>

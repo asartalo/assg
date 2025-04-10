@@ -203,7 +203,7 @@ func (g *Generator) Build(now time.Time) error {
 		return err
 	}
 
-	err = g.ag.GenerateFeed(now)
+	err = g.ag.GenerateFeeds(now)
 	if err != nil {
 		fmt.Println("IT ERRORd!")
 		fmt.Println(err)

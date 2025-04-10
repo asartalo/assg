@@ -122,33 +122,45 @@ func (ag *AtomGenerator) defaultFeedAuthor() *FeedAuthor {
 	return mg.feedAuthor
 }
 
-func (ag *AtomGenerator) GenerateFeed(now time.Time) error {
+type configAndFeed struct {
+	config config.ContentFeed
+	feed   *Feed
+}
+
+func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 	mg := ag.mg
 	if !mg.Config.GenerateFeed {
 		return nil
 	}
 
-	atomUrl := mg.FullUrl("atom.xml")
-	feed := Feed{
-		Xmlns:     "http://www.w3.org/2005/Atom",
-		Lang:      "en",
-		Title:     mg.Config.Title,
-		Subtitle:  mg.Config.Description,
-		Id:        atomUrl,
-		Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
-		Updated:   FeedDateTime(now),
-		Links: []*FeedLink{
-			{
-				Rel:  "self",
-				Type: "application/atom+xml",
-				Href: atomUrl,
+	cNFs := []configAndFeed{}
+
+	for _, conf := range ag.Config.FeedsForContent {
+		atomUrl := ag.feedUrl(conf)
+		cNFs = append(cNFs, configAndFeed{
+			config: conf,
+			feed: &Feed{
+				Xmlns:     "http://www.w3.org/2005/Atom",
+				Lang:      "en",
+				Title:     mg.Config.Title,
+				Subtitle:  mg.Config.Description,
+				Id:        atomUrl,
+				Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
+				Updated:   FeedDateTime(now),
+				Links: []*FeedLink{
+					{
+						Rel:  "self",
+						Type: "application/atom+xml",
+						Href: atomUrl,
+					},
+					{
+						Rel:  "alternate",
+						Type: "text/html",
+						Href: mg.SiteUrlNoTrailingslash(),
+					},
+				},
 			},
-			{
-				Rel:  "alternate",
-				Type: "text/html",
-				Href: mg.SiteUrlNoTrailingslash(),
-			},
-		},
+		})
 	}
 
 	for _, page := range mg.hierarchy.SortedPages() {
@@ -161,22 +173,33 @@ func (ag *AtomGenerator) GenerateFeed(now time.Time) error {
 			return err
 		}
 
-		feed.Entries = append(feed.Entries, entry)
+		for _, cNF := range cNFs {
+			if ag.includedInFeed(cNF.config, page) {
+				cNF.feed.Entries = append(cNF.feed.Entries, entry)
+			}
+		}
+
 	}
 
-	atomFilePath := mg.OutputPath("atom.xml")
+	for _, cNF := range cNFs {
+		atomFilePath := mg.OutputPath(ag.feedFileName(cNF.config))
+		atomFile, err := os.OpenFile(atomFilePath, os.O_RDWR|os.O_CREATE, 0600)
+		if err != nil {
+			return err
+		}
 
-	atomFile, err := os.OpenFile(atomFilePath, os.O_RDWR|os.O_CREATE, 0600)
-	if err != nil {
-		return err
+		err = cNF.feed.WriteXML(atomFile)
+		if err != nil {
+			return err
+		}
+
+		err = atomFile.Close()
+		if err != nil {
+			return err
+		}
 	}
 
-	err = feed.WriteXML(atomFile)
-	if err != nil {
-		return err
-	}
-
-	return atomFile.Close()
+	return nil
 }
 
 func (ag *AtomGenerator) createFeedEntry(page *content.WebPage) (*FeedEntry, error) {
@@ -219,18 +242,58 @@ func (ag *AtomGenerator) createFeedEntry(page *content.WebPage) (*FeedEntry, err
 }
 
 func (ag *AtomGenerator) AtomLinks() string {
-	feed := ag.Config.FeedsForContent[0]
-	return fmt.Sprintf(
-		`<link rel="alternate" title="%s" type="application/atom+xml" href="%s">`,
-		ag.feedTitle(feed),
-		ag.mg.FullUrl("atom.xml"),
-	)
+	var sb strings.Builder
+	for _, feed := range ag.Config.FeedsForContent {
+		sb.WriteString(fmt.Sprintf(
+			`<link rel="alternate" title="%s" type="application/atom+xml" href="%s">`,
+			ag.feedTitle(feed),
+			ag.feedUrl(feed),
+		))
+	}
+
+	return sb.String()
 }
 
-func (ag *AtomGenerator) feedTitle(feed config.ContentFeed) string {
-	if feed.Title == "" {
+func (ag *AtomGenerator) feedTitle(feedConfig config.ContentFeed) string {
+	if feedConfig.Title == "" {
 		return fmt.Sprintf("%s Feed", ag.Config.Title)
 	}
 
-	return feed.Title
+	return feedConfig.Title
+}
+
+func (ag *AtomGenerator) feedUrl(feedConfig config.ContentFeed) string {
+	return ag.mg.FullUrl(ag.feedFileName(feedConfig))
+}
+
+func (ag *AtomGenerator) feedFileName(feedConfig config.ContentFeed) string {
+	var name string
+	if feedConfig.Name == "all" {
+		name = "atom"
+	} else {
+		name = feedConfig.Name
+	}
+
+	return fmt.Sprintf("%s.xml", name)
+}
+
+func (ag *AtomGenerator) includedInFeed(feedConfig config.ContentFeed, page *content.WebPage) bool {
+	path := page.RenderedPath()
+	if feedConfig.IncludeAllInitially() {
+		for _, exPrefix := range feedConfig.Exclusions() {
+			if exPrefix != "" && strings.HasPrefix(path, exPrefix) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	for _, inPrefix := range feedConfig.Inclusions() {
+		if strings.HasPrefix(path, inPrefix) {
+			return true
+		}
+	}
+
+	return false
 }

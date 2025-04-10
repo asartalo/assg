@@ -5,9 +5,9 @@ author = "Jane Doe"
 
 generate_feed = true
 feed_limit = 3
-# Default is [{ content: "all", title: "" }] which means generate for all content with default title.
+# Default is [{ name="atom" title="<SiteName> Feed" Include="" }] which means generate for all content with default title.
 feeds_for_content = [
-  { content="all", title="All Content Feed" },
-  { content="posts", title="Just the Posts" },
-  { content="shorts", title="Shortforms" },
+  { name="all", title="All Content Feed", except="misc" },
+  { name="posts-and-shorts", include="posts, shorts", title="Posts and Shorts" },
+  { name="just-posts", include="posts", title="Just the Posts" },
 ]
