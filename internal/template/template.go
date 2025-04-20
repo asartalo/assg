@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"codeberg.org/asartalo/formathtml"
 	"github.com/Masterminds/sprig/v3"
-	"github.com/asartalo/formathtml"
 	mset "github.com/deckarep/golang-set/v2"
 )
 

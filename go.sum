@@ -1,3 +1,5 @@
+codeberg.org/asartalo/formathtml v0.2.0 h1:4O7Dcn4JmsfnKlDKotnxkOqfHbfNV0hcduqpabwD0U0=
+codeberg.org/asartalo/formathtml v0.2.0/go.mod h1:cZ2+pY1ndYcwUGe0CCSz7t3krh3b9s6gV50In15FAZo=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=

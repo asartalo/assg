@@ -5,10 +5,10 @@ go 1.23
 toolchain go1.23.4
 
 require (
+	codeberg.org/asartalo/formathtml v0.2.0
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/amit7itz/goset v1.2.1
-	github.com/asartalo/formathtml v0.1.3
 	github.com/bep/debounce v1.2.1
 	github.com/chromedp/chromedp v0.11.2
 	github.com/deckarep/golang-set/v2 v2.7.0
@@ -16,6 +16,7 @@ require (
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/jaschaephraim/lrserver v0.0.0-20240306232639-afed386b3640
 	github.com/mangoumbrella/goldmark-figure v1.2.0
+	github.com/nametake/golangci-lint-langserver v0.0.9
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/yuin/goldmark v1.7.4
@@ -41,7 +42,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/nametake/golangci-lint-langserver v0.0.9 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.0.0-20191222043438-96c4efab7ee2 // indirect
