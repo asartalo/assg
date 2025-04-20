@@ -4,8 +4,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/asartalo/assg/internal/config"
-	"github.com/asartalo/assg/internal/generator"
+	"codeberg.org/asartalo/assg/internal/config"
+	"codeberg.org/asartalo/assg/internal/generator"
 )
 
 func Build(srcDir, outputDir string, includeDrafts bool, verbose bool, now time.Time) error {

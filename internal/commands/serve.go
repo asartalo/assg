@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/asartalo/assg/internal/server"
+	"codeberg.org/asartalo/assg/internal/server"
 )
 
 func Serve(srcDir string, includeDrafts bool) error {

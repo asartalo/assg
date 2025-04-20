@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asartalo/assg/internal/config"
-	"github.com/asartalo/assg/internal/content"
+	"codeberg.org/asartalo/assg/internal/config"
+	"codeberg.org/asartalo/assg/internal/content"
 )
 
 type FeedGenerator struct {
@@ -145,7 +145,7 @@ func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 				Title:     mg.Config.Title,
 				Subtitle:  mg.Config.Description,
 				Id:        atomUrl,
-				Generator: &FeedGenerator{Uri: "https://github.com/asartalo/assg", Name: "ASSG"},
+				Generator: &FeedGenerator{Uri: "https://codeberg.org/asartalo/assg", Name: "ASSG"},
 				Updated:   FeedDateTime(now),
 				Links: []*FeedLink{
 					{

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/asartalo/assg/internal/content"
+	"codeberg.org/asartalo/assg/internal/content"
 )
 
 type ContentNode struct {

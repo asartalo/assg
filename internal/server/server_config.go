@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/asartalo/assg/internal/config"
+	"codeberg.org/asartalo/assg/internal/config"
 )
 
 func LoadServeConfiguration(srcDir string, includeDrafts bool) (*config.Config, error) {

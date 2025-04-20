@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/asartalo/assg/internal/commands"
+	"codeberg.org/asartalo/assg/internal/commands"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Long: "ASSG (Asartalo’s Static Site Generator) is a static site generator custom\n" +
 		"built for Asartalo’s website at https://brainchildprojects.com and for other\n" +
 		"projects.\n\n" +
-		"Visit https://github.com/asartalo/assg for the source and for more information.",
+		"Visit https://codeberg.org/asartalo/assg for the source and for more information.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

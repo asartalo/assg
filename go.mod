@@ -1,4 +1,4 @@
-module github.com/asartalo/assg
+module codeberg.org/asartalo/assg
 
 go 1.23
 

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asartalo/assg/internal/config"
-	"github.com/asartalo/assg/internal/content"
-	"github.com/asartalo/assg/internal/template"
+	"codeberg.org/asartalo/assg/internal/config"
+	"codeberg.org/asartalo/assg/internal/content"
+	"codeberg.org/asartalo/assg/internal/template"
 )
 
 type TermTTC map[string]*TaxonomyTermContent

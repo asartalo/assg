@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/asartalo/assg/internal/server"
+	"codeberg.org/asartalo/assg/internal/server"
 	"github.com/chromedp/chromedp"
 )
 

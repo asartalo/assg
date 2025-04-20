@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asartalo/assg/internal/commands"
+	"codeberg.org/asartalo/assg/internal/commands"
 	"github.com/stretchr/testify/assert"
 )
 

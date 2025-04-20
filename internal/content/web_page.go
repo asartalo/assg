@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asartalo/assg/internal/markdown"
-	"github.com/asartalo/assg/internal/template"
+	"codeberg.org/asartalo/assg/internal/markdown"
+	"codeberg.org/asartalo/assg/internal/template"
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/goldmark/frontmatter"
 )

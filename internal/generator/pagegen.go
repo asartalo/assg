@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/asartalo/assg/internal/config"
-	"github.com/asartalo/assg/internal/content"
+	"codeberg.org/asartalo/assg/internal/config"
+	"codeberg.org/asartalo/assg/internal/content"
 	"github.com/gertd/go-pluralize"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
