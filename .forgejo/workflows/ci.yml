@@ -10,6 +10,8 @@ jobs:
 
   test:
     runs-on: docker
+    container:
+      image: docker.io/zenika/alpine-chrome:with-chromedriver
     steps:
     - uses: actions/checkout@v4
 
@@ -18,10 +20,15 @@ jobs:
       with:
         go-version-file: 'go.mod'
 
-    - uses: https://github.com/browser-actions/setup-chrome@v1
-      id: setup-chrome
-      with:
-        install-chromedriver: true
+    # - name: Set up Chrome
+    #   uses: https://github.com/browser-actions/setup-chrome@v1
+    #   id: setup-chrome
+    #   with:
+    #     install-chromedriver: true
+
+    - name: Check Node JS version
+      run: |
+          node --version
 
     - name: Test
       env:
