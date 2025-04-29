@@ -12,7 +12,7 @@ jobs:
     runs-on: docker
     container:
       # image: docker.io/zenika/alpine-chrome:with-chromedriver
-      image: localhost/browser-testing:latest
+      image: docker.io/asartalo/browser-testing:latest
     steps:
     - uses: actions/checkout@v4
 
