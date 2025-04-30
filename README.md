@@ -2,13 +2,11 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/asartalo/assg/badge.svg)](https://coveralls.io/github/asartalo/assg)
 
-<div class="notice">
-*This project is officially hosted at [Codeberg](https://codeberg.org/asartalo/assg) and mirrorred at [GitHub](https://github.com/asartalo/assg).*
-</div>
+A static site generator written in go custom-built for my needs.
 
 ---
 
-A static site generator written in go custom-built for my needs.
+*This project is officially hosted at [Codeberg](https://codeberg.org/asartalo/assg) and mirrorred at [GitHub](https://github.com/asartalo/assg).*
 
 ## Basic Usage
 
