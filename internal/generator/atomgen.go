@@ -111,6 +111,10 @@ type AtomGenerator struct {
 	Config *config.Config
 }
 
+func (ag *AtomGenerator) Printf(format string, args ...any) {
+	ag.mg.Printf(format, args...)
+}
+
 func (ag *AtomGenerator) defaultFeedAuthor() *FeedAuthor {
 	mg := ag.mg
 	if mg.feedAuthor == nil {
@@ -128,6 +132,7 @@ type configAndFeed struct {
 }
 
 func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
+	ag.Printf("==============\nGenerating atom feeds...\n")
 	mg := ag.mg
 	if !mg.Config.GenerateFeed {
 		return nil
@@ -137,12 +142,17 @@ func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 
 	for _, conf := range ag.Config.FeedsForContent {
 		atomUrl := ag.feedUrl(conf)
+		title := conf.Title
+		if title == "" {
+			title = mg.Config.Title
+		}
+
 		cNFs = append(cNFs, configAndFeed{
 			config: conf,
 			feed: &Feed{
 				Xmlns:     "http://www.w3.org/2005/Atom",
 				Lang:      "en",
-				Title:     mg.Config.Title,
+				Title:     title,
 				Subtitle:  mg.Config.Description,
 				Id:        atomUrl,
 				Generator: &FeedGenerator{Uri: "https://codeberg.org/asartalo/assg", Name: "ASSG"},
