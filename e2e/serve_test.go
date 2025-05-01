@@ -38,7 +38,7 @@ func TestServer(t *testing.T) {
 	fixturesDirectory := path.Join(cwd, "fixtures")
 
 	// Start the test server
-	srv, err := server.NewServer(path.Join(fixturesDirectory, "blog-posts"), false)
+	srv, err := server.NewServer(path.Join(fixturesDirectory, "blog-posts"), false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,10 @@ func TestServer(t *testing.T) {
 		t.Fatalf("got unexpected status code: %d", resp.Status)
 	}
 
-	chromedp.Run(ctx, chromedp.Title(&result))
+	err = chromedp.Run(ctx, chromedp.Title(&result))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Check the result
 	if result != "My Blog" {

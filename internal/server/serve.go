@@ -14,9 +14,9 @@ import (
 	"github.com/jaschaephraim/lrserver"
 )
 
-func buildForServer(config *config.Config, now time.Time) error {
+func buildForServer(config *config.Config, now time.Time, verbose bool) error {
 	log.Println("Building site...")
-	gen, err := generator.New(config, false)
+	gen, err := generator.New(config, verbose)
 	if err != nil {
 		return err
 	}
@@ -34,18 +34,20 @@ type Server struct {
 	SrcDir  string
 	done    chan bool
 	startMu sync.Mutex
+	verbose bool
 }
 
-func NewServer(srcDir string, includeDrafts bool) (*Server, error) {
+func NewServer(srcDir string, includeDrafts bool, verbose bool) (*Server, error) {
 	config, err := LoadServeConfiguration(srcDir, includeDrafts)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		Config: config,
-		SrcDir: srcDir,
-		done:   make(chan bool),
+		Config:  config,
+		SrcDir:  srcDir,
+		done:    make(chan bool),
+		verbose: verbose,
 	}, nil
 }
 
@@ -68,7 +70,7 @@ func (s *Server) Start(ready chan bool) error {
 	s.startMu.Unlock()
 
 	buildIt := func(eventName string) {
-		err := buildForServer(config, time.Now())
+		err := buildForServer(config, time.Now(), s.verbose)
 		if err != nil {
 			log.Println(err)
 		} else {
@@ -123,7 +125,11 @@ func (s *Server) Start(ready chan bool) error {
 		// extra handling here
 		watcher.Close()
 		log.Println("Cleaning up...")
-		os.RemoveAll(serveDirectory)
+		err := os.RemoveAll(serveDirectory)
+		if err != nil {
+			log.Fatalf("Unable to clear serve directory:%v+", err)
+		}
+
 		cancel()
 	}()
 

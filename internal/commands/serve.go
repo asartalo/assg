@@ -8,13 +8,13 @@ import (
 	"codeberg.org/asartalo/assg/internal/server"
 )
 
-func Serve(srcDir string, includeDrafts bool) error {
+func Serve(srcDir string, includeDrafts bool, verbose bool) error {
 	ready := make(chan bool)
 	stopSignal := make(chan os.Signal, 1)
 	errorChannel := make(chan error)
 	signal.Notify(stopSignal, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	srv, err := server.NewServer(srcDir, includeDrafts)
+	srv, err := server.NewServer(srcDir, includeDrafts, verbose)
 	if err != nil {
 		return err
 	}
@@ -30,7 +30,5 @@ func Serve(srcDir string, includeDrafts bool) error {
 		errorChannel <- err
 	}()
 
-	<-errorChannel
-
-	return nil
+	return <-errorChannel
 }

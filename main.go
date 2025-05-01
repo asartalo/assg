@@ -54,7 +54,7 @@ var serveCmd = &cobra.Command{
 			return
 		}
 
-		err = commands.Serve(srcDir, false)
+		err = commands.Serve(srcDir, false, verbose)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -71,6 +71,7 @@ func init() {
 
 	// Add flags
 	buildCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose output")
+	serveCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Print verbose output")
 	serveCmd.Flags().BoolVar(&includeDrafts, "include-drafts", false, "Include draft pages when serving")
 }
 

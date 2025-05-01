@@ -14,15 +14,15 @@ func LoadServeConfiguration(srcDir string, includeDrafts bool) (*config.Config, 
 		return nil, err
 	}
 
-	config, err := config.Load(path.Join(srcDir, "config.toml"))
+	conf, err := config.Load(path.Join(srcDir, "config.toml"))
 	if err != nil {
 		return nil, err
 	}
 
-	config.DevMode = true
-	config.OutputDirectory = serveDirectory
-	config.IncludeDrafts = includeDrafts
-	config.BaseURL = fmt.Sprintf("http://localhost:%d", config.ServerConfig.Port)
+	conf.DevMode = true
+	conf.OutputDirectory = serveDirectory
+	conf.IncludeDrafts = includeDrafts
+	conf.BaseURL = fmt.Sprintf("http://localhost:%d", conf.ServerConfig.Port)
 
-	return config, nil
+	return conf, nil
 }
