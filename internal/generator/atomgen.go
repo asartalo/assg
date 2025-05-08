@@ -178,6 +178,8 @@ func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 			continue
 		}
 
+		ag.Printf("Creating entry for '%s'\n", page.RootPath())
+
 		entry, err := ag.createFeedEntry(page)
 		if err != nil {
 			return err
@@ -185,6 +187,7 @@ func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 
 		for _, cNF := range cNFs {
 			if ag.includedInFeed(cNF.config, page) {
+				ag.Printf("Include page in %s\n", cNF.config.Title)
 				cNF.feed.Entries = append(cNF.feed.Entries, entry)
 			}
 		}
@@ -198,6 +201,7 @@ func (ag *AtomGenerator) GenerateFeeds(now time.Time) error {
 			return err
 		}
 
+		ag.Printf("Writing \"%s\" feed to %s\n", cNF.config.Title, atomFilePath)
 		err = cNF.feed.WriteXML(atomFile)
 		if err != nil {
 			return err
