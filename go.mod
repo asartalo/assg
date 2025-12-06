@@ -1,8 +1,8 @@
 module codeberg.org/asartalo/assg
 
-go 1.23
+go 1.23.4
 
-toolchain go1.23.4
+toolchain go1.24.10
 
 require (
 	codeberg.org/asartalo/formathtml v0.2.0
@@ -16,7 +16,7 @@ require (
 	github.com/gertd/go-pluralize v0.2.1
 	github.com/jaschaephraim/lrserver v0.0.0-20240306232639-afed386b3640
 	github.com/mangoumbrella/goldmark-figure v1.2.0
-	github.com/nametake/golangci-lint-langserver v0.0.9
+	github.com/nametake/golangci-lint-langserver v0.0.11
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/yuin/goldmark v1.7.4
@@ -44,7 +44,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/sourcegraph/jsonrpc2 v0.0.0-20191222043438-96c4efab7ee2 // indirect
+	github.com/sourcegraph/jsonrpc2 v0.2.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
@@ -52,3 +52,5 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+tool github.com/nametake/golangci-lint-langserver

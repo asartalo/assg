@@ -85,6 +85,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/nametake/golangci-lint-langserver v0.0.9 h1:LyptIWNmzvlenbuqV8azi2Uv0YQh4Qo4D5kn6LtL1LQ=
 github.com/nametake/golangci-lint-langserver v0.0.9/go.mod h1:/z3E2ILvhohCW+WAl3JCjVJRB0oC3GHKBnSKCCkfAiQ=
+github.com/nametake/golangci-lint-langserver v0.0.11 h1:MFWhWn49q1SBvyM/8gggAy0Tn4RGdTNLowQB2/Ww+bk=
+github.com/nametake/golangci-lint-langserver v0.0.11/go.mod h1:TKCnN7nsG7pOxowvJ8Y8kCcdlLrAlDcz2Iq2z7fq61M=
 github.com/orisano/pixelmatch v0.0.0-20220722002657-fb0b55479cde h1:x0TT0RDC7UhAVbbWWBzr41ElhJx5tXPWkIHA2HWPRuw=
 github.com/orisano/pixelmatch v0.0.0-20220722002657-fb0b55479cde/go.mod h1:nZgzbfBr3hhjoZnS66nKrHmduYNpc34ny7RK4z5/HM0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
@@ -101,6 +103,8 @@ github.com/smartystreets/goconvey v1.8.1 h1:qGjIddxOk4grTu9JPOU31tVfq3cNdBlNa5sS
 github.com/smartystreets/goconvey v1.8.1/go.mod h1:+/u4qLyY6x1jReYOp7GOM2FSt8aP9CzCZL03bI28W60=
 github.com/sourcegraph/jsonrpc2 v0.0.0-20191222043438-96c4efab7ee2 h1:5VGNYxMxzZ8Jb2bARgVl1DNg8vpcd9S8b4MbbjWQ8/w=
 github.com/sourcegraph/jsonrpc2 v0.0.0-20191222043438-96c4efab7ee2/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=
+github.com/sourcegraph/jsonrpc2 v0.2.0 h1:KjN/dC4fP6aN9030MZCJs9WQbTOjWHhrtKVpzzSrr/U=
+github.com/sourcegraph/jsonrpc2 v0.2.0/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=
 github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkUJE=
 github.com/spf13/cast v1.6.0 h1:GEiTHELF+vaR5dhz3VqZfFSzZjYbgeKDpBxQVS4GYJ0=
 github.com/spf13/cast v1.6.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=

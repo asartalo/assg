@@ -12,6 +12,7 @@
     entr
     emmet-ls
     golangci-lint-langserver
+    go_1_24
   ];
 
   # https://devenv.sh/scripts/
@@ -30,7 +31,10 @@
   # services.postgres.enable = true;
 
   # https://devenv.sh/languages/
-  languages.go.enable = true;
+  languages.go = {
+    enable = true;
+    package = pkgs.go_1_24;
+  };
 
   languages.javascript = {
     enable = true;
