@@ -12,7 +12,7 @@
     entr
     emmet-ls
     golangci-lint-langserver
-    go_1_24
+    go_1_26
   ];
 
   # https://devenv.sh/scripts/
@@ -33,7 +33,7 @@
   # https://devenv.sh/languages/
   languages.go = {
     enable = true;
-    package = pkgs.go_1_24;
+    package = pkgs.go_1_26;
   };
 
   languages.javascript = {
